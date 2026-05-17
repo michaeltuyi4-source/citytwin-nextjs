@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createClient } from '@/lib/supabase';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -9,11 +10,44 @@ interface UpgradeModalProps {
 
 export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<'one-time' | 'monthly'>('one-time');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const supabase = createClient();
 
   if (!isOpen) return null;
 
-  function handleUpgrade() {
-    alert("Payment flow coming soon — you'll be the first to know when it's live.");
+  async function handleUpgrade() {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError('Please sign in first.');
+        setLoading(false);
+        return;
+      }
+
+      const plan = selectedPlan === 'one-time' ? 'lifetime' : 'monthly';
+
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan,
+          userId: session.user.id,
+          email: session.user.email,
+        }),
+      });
+
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
   }
 
   return (
@@ -51,8 +85,19 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
           </div>
         </div>
 
-        <button className="btn-upgrade" onClick={handleUpgrade}>
-          {selectedPlan === 'one-time' ? 'Unlock for $9' : 'Unlock for $5/mo'}
+        {error && (
+          <p style={{ color: '#e05c4b', fontSize: '13px', textAlign: 'center', marginBottom: 8 }}>
+            {error}
+          </p>
+        )}
+
+        <button
+          className="btn-upgrade"
+          onClick={handleUpgrade}
+          disabled={loading}
+          style={{ opacity: loading ? 0.7 : 1 }}
+        >
+          {loading ? 'Redirecting...' : selectedPlan === 'one-time' ? 'Unlock for $9' : 'Unlock for $5/mo'}
         </button>
         <button className="upgrade-later" onClick={onClose}>Maybe later</button>
       </div>
