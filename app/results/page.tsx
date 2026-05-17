@@ -55,7 +55,24 @@ export default function ResultsPage() {
     const rawPri = sessionStorage.getItem('citytwin_priorities');
     if (raw)    setResults(JSON.parse(raw));
     if (rawPri) setPriorities(JSON.parse(rawPri));
-  }, []);
+
+    // If returning from Stripe success, check tier directly from Supabase
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          supabase
+            .from('profiles')
+            .select('tier')
+            .eq('id', session.user.id)
+            .single()
+            .then(({ data: profile }) => {
+              if (profile?.tier === 'premium') setUnlocked(true);
+            });
+        }
+      });
+    }
+  }, [supabase]);
 
   // ── Auth gate ─────────────────────────────────────────────────────────────────
   useEffect(() => {
