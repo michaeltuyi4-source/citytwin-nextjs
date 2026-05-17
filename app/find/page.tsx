@@ -100,6 +100,9 @@ export default function FindPage() {
     sessionStorage.setItem('citytwin_results',    JSON.stringify(results));
     sessionStorage.setItem('citytwin_city',       selectedCity!);
     sessionStorage.setItem('citytwin_priorities', JSON.stringify(priorities));
+    localStorage.setItem('citytwin_results',    JSON.stringify(results));
+    localStorage.setItem('citytwin_city',       selectedCity!);
+    localStorage.setItem('citytwin_priorities', JSON.stringify(priorities));
     router.push('/results');
   }
 

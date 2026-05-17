@@ -51,8 +51,8 @@ export default function ResultsPage() {
 
   // ── Load session storage ──────────────────────────────────────────────────────
   useEffect(() => {
-    const raw    = sessionStorage.getItem('citytwin_results');
-    const rawPri = sessionStorage.getItem('citytwin_priorities');
+    const raw    = sessionStorage.getItem('citytwin_results')    || localStorage.getItem('citytwin_results');
+    const rawPri = sessionStorage.getItem('citytwin_priorities') || localStorage.getItem('citytwin_priorities');
     if (raw)    setResults(JSON.parse(raw));
     if (rawPri) setPriorities(JSON.parse(rawPri));
 
