@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CTLogo from '@/components/CTLogo';
 import AuthModal from '@/components/AuthModal';
@@ -24,6 +25,7 @@ const CAT_META: Record<string, { label: string; icon: string }> = {
 };
 
 export default function ResultsPage() {
+  const router = useRouter();
   const [results, setResults]         = useState<MatchResult[]>([]);
   const [priorities, setPriorities]   = useState<Record<string, string>>({});
   const [openCards, setOpenCards]     = useState<Set<number>>(new Set());
@@ -140,7 +142,7 @@ export default function ResultsPage() {
       <div className="results-hero">
         <div className="hero-eyebrow">Your results</div>
         <h1 className="results-hero-title">
-          Your top <em>neighborhoods in {results[0]?.cityName || ''}</em>
+          Your top neighborhoods in {results[0]?.cityName || ''}
         </h1>
         <p className="results-hero-sub">
           Based on what you told us matters, here are the neighborhoods most likely to feel like home.
@@ -286,7 +288,7 @@ export default function ResultsPage() {
           </p>
           <div className="bottom-btns">
             <Link href="/places" className="btn-primary">Find my places →</Link>
-            <Link href="/find" className="btn-ghost">← Change priorities</Link>
+            <button className="btn-ghost" onClick={() => { sessionStorage.setItem('citytwin_returning', 'true'); router.push('/find'); }}>← Change priorities</button>
           </div>
         </div>
       </div>
