@@ -1,0 +1,24 @@
+# CityTwin — Neighborhood Matching App
+# https://citytwinapp.com
+
+CityTwin is a neighborhood matching and lifestyle companion for people
+relocating to new cities. It matches users to neighborhoods based on
+how they actually live — walkability, food scene, coffee culture,
+fitness, faith community, nightlife, and more.
+
+## Pages
+/ — Landing page
+/find — 3-step lifestyle quiz (city, priorities, preferences)
+/results — Top 3 neighborhood matches with lifestyle scores
+/places — Interactive map with venues by neighborhood
+
+## Cities covered
+Charlotte NC, Chicago IL, Dallas TX, Houston TX, Atlanta GA,
+Seattle WA, Phoenix AZ, Montgomery County MD. Expanding regularly.
+
+## Model
+Free: #1 neighborhood match
+Premium ($9 one-time or $5/month): All 3 matches + full venue map
+
+## Built with
+Next.js 14, Supabase, Mapbox, Azure Functions, Stripe
