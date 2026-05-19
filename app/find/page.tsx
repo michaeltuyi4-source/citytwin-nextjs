@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import type { PriorityLabel } from '@/lib/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CTLogo from '@/components/CTLogo';
@@ -135,8 +136,7 @@ function getCategoryIcon(id: string, selected: boolean) {
   }
 }
 
-type PriorityLabel = 'must-have' | 'important' | 'nice-to-have';
-type PriorityMap   = Record<string, PriorityLabel>;
+type PriorityMap = Record<string, PriorityLabel>;
 type StepNum       = 1 | 2 | 3;
 
 const PRIORITY_BTN_CLASS: Record<PriorityLabel, string> = {

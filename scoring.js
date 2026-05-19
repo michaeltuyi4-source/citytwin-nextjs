@@ -3,6 +3,7 @@
 // No APIs, no AI. Pure weighted arithmetic — transparent and explainable.
 
 import { NEIGHBORHOODS, PRIORITY_WEIGHTS } from "./neighborhoods.js";
+import { getPhrasesForMatch, buildInsight } from "./phrases.js";
 
 // ─────────────────────────────────────────────
 // CORE SCORING
@@ -55,92 +56,41 @@ function maxPossibleScore(userWeights) {
 
 /**
  * detectGaps
- * Finds categories where the user said "must have" (weight 3)
- * but the neighborhood scores 5 or below.
+ * Returns structured gap objects so the results page can style must-have
+ * conflicts without scanning strings.
  *
  * @param {object} neighborhood
- * @param {object} userWeights
  * @param {object} userPriorityLabels  - e.g. { walkability: "must-have", foodScene: "important" }
- * @param {Array}  categoryDefs        - LIFESTYLE_CATEGORIES from neighborhoods.js
- * @returns {Array} - array of gap strings ready to display
+ * @param {Array}  categoryDefs        - LIFESTYLE_CATEGORIES
+ * @returns {Array<{ text: string, isMustHave: boolean }>}
  */
-function detectGaps(neighborhood, userWeights, userPriorityLabels, categoryDefs) {
+function detectGaps(neighborhood, userPriorityLabels, categoryDefs) {
   const gaps = [];
   const GAP_THRESHOLD = 5;
 
+  // 1. Must-have conflicts: user said it matters most, neighborhood scores low
   for (const [category, priorityLabel] of Object.entries(userPriorityLabels)) {
-    if (priorityLabel !== "must-have") continue;
+    if (priorityLabel !== 'must-have') continue;
 
     const score = neighborhood.scores[category] ?? 0;
     if (score <= GAP_THRESHOLD) {
       const def = categoryDefs.find((c) => c.id === category);
       const label = def ? def.label : category;
-      gaps.push(
-        `${label} scores low here (${score}/10) — and you marked this as a must-have.`
-      );
+      gaps.push({
+        text: `${label} scores low here (${score}/10), and you marked this as a must-have.`,
+        isMustHave: true,
+      });
     }
   }
 
-  // Also surface pre-written gaps from the neighborhood data
+  // 2. Pre-written neighborhood trade-offs from the data file
   if (neighborhood.gaps && neighborhood.gaps.length > 0) {
-    neighborhood.gaps.forEach((gap) => gaps.push(gap));
+    neighborhood.gaps.forEach((gap) => {
+      gaps.push({ text: gap, isMustHave: false });
+    });
   }
 
   return gaps;
-}
-
-// ─────────────────────────────────────────────
-// MATCH EXPLANATION GENERATOR
-// Creates a plain-language "why this fits you" for each result
-// ─────────────────────────────────────────────
-
-/**
- * buildExplanation
- * Finds the top 3 categories where the neighborhood scores best
- * AND the user weighted them highly. Returns plain-language sentences.
- *
- * @param {object} neighborhood
- * @param {object} userWeights
- * @param {Array}  categoryDefs
- * @returns {string}
- */
-function buildExplanation(neighborhood, userWeights, categoryDefs) {
-  // Score each weighted category: neighborhood score × user weight
-  const contributions = Object.entries(userWeights)
-    .map(([category, weight]) => ({
-      category,
-      contribution: (neighborhood.scores[category] ?? 0) * weight,
-      score: neighborhood.scores[category] ?? 0,
-      weight,
-    }))
-    .filter((c) => c.score >= 7)           // Only mention things the neighborhood is actually good at
-    .sort((a, b) => b.contribution - a.contribution)
-    .slice(0, 3);                           // Top 3 strengths relevant to this user
-
-  if (contributions.length === 0) {
-    return "This neighborhood covers your priorities at a moderate level across the board.";
-  }
-
-  const sentences = contributions.map(({ category, score }) => {
-    const def = categoryDefs.find((c) => c.id === category);
-    const label = def ? def.label.toLowerCase() : category;
-
-    const qualifier =
-      score >= 9 ? "exceptional" :
-      score >= 8 ? "strong" :
-      "solid";
-
-    return `${qualifier} ${label} (${score}/10)`;
-  });
-
-  // Build natural language from the array
-  if (sentences.length === 1) {
-    return `Stands out for its ${sentences[0]}.`;
-  } else if (sentences.length === 2) {
-    return `Stands out for its ${sentences[0]} and ${sentences[1]}.`;
-  } else {
-    return `Stands out for its ${sentences[0]}, ${sentences[1]}, and ${sentences[2]}.`;
-  }
 }
 
 // ─────────────────────────────────────────────
@@ -192,10 +142,11 @@ function getTopMatches(cityKey, userPriorityLabels, categoryDefs) {
   const maxScore = maxPossibleScore(userWeights);
 
   const scored = cityData.neighborhoods.map((neighborhood) => {
-    const rawScore = scoreNeighborhood(neighborhood, userWeights);
+    const rawScore     = scoreNeighborhood(neighborhood, userWeights);
     const matchPercent = Math.round((rawScore / maxScore) * 100);
-    const explanation = buildExplanation(neighborhood, userWeights, categoryDefs);
-    const gaps = detectGaps(neighborhood, userWeights, userPriorityLabels, categoryDefs);
+    const insightLine  = buildInsight(neighborhood, cityData.cityName, userPriorityLabels);
+    const phraseChips  = getPhrasesForMatch(neighborhood, cityData.cityName, userPriorityLabels);
+    const gaps         = detectGaps(neighborhood, userPriorityLabels, categoryDefs);
 
     return {
       // Identity
@@ -207,15 +158,16 @@ function getTopMatches(cityKey, userPriorityLabels, categoryDefs) {
       // Match data
       matchPercent,
       rawScore,
-      explanation,
-      gaps,
+      insightLine,    // replaces explanation
+      phraseChips,    // NEW
+      gaps,           // shape changed from string[] to { text, isMustHave }[]
 
       // Display data — passed straight to results page
-      rentRange: neighborhood.rentRange,
-      walkScore: neighborhood.walkScore,
+      rentRange:  neighborhood.rentRange,
+      walkScore:  neighborhood.walkScore,
       highlights: neighborhood.highlights,
-      bestFor: neighborhood.bestFor,
-      coords: neighborhood.coords,
+      bestFor:    neighborhood.bestFor,
+      coords:     neighborhood.coords,
 
       // Full scores — used for category breakdown on results page
       scores: neighborhood.scores,
@@ -232,4 +184,4 @@ function getTopMatches(cityKey, userPriorityLabels, categoryDefs) {
 // EXPORT
 // ─────────────────────────────────────────────
 
-export { getTopMatches, scoreNeighborhood, detectGaps, buildExplanation };
+export { getTopMatches, scoreNeighborhood, detectGaps };

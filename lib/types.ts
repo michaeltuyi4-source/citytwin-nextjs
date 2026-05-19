@@ -17,6 +17,18 @@ export interface Coords {
   lng: number;
 }
 
+export interface Gap {
+  text: string;
+  isMustHave: boolean;
+}
+
+export interface PhraseChip {
+  category: string;
+  phrase: string;
+  score: number;
+  weight: PriorityLabel;
+}
+
 export interface MatchResult {
   id: string;
   name: string;
@@ -24,8 +36,9 @@ export interface MatchResult {
   cityName: string;
   matchPercent: number;
   rawScore: number;
-  explanation: string;
-  gaps: string[];
+  insightLine: string;
+  phraseChips: PhraseChip[];
+  gaps: Gap[];
   rentRange: string;
   walkScore: number;
   highlights: string[];
