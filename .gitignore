@@ -30,8 +30,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Orientation doc (local collaborator reference, not for VCS)
+# Orientation docs (local collaborator reference, not for VCS)
 CITYTWIN-ORIENTATION.md
+CITYTWIN-ORIENTATION-V2.md
 
 # TypeScript
 *.tsbuildinfo

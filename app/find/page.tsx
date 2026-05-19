@@ -23,18 +23,6 @@ const CITIES = [
 
 const CITY_REGIONS = ['Midwest', 'South', 'West', 'Mid-Atlantic'] as const;
 
-const CATEGORIES = [
-  { id: 'walkability',       label: 'Walkability',         desc: 'Get errands done on foot' },
-  { id: 'transitAccess',     label: 'Public transit',      desc: 'Buses, trains, light rail' },
-  { id: 'foodScene',         label: 'Food scene',          desc: 'Restaurants, variety, quality' },
-  { id: 'coffeeShops',       label: 'Coffee shops',        desc: 'Cafes to work or meet' },
-  { id: 'outdoorSpaces',     label: 'Outdoor spaces',      desc: 'Parks, trails, green space' },
-  { id: 'nightlife',         label: 'Nightlife',           desc: 'Bars, music, evening energy' },
-  { id: 'familyFriendly',    label: 'Family-friendly',     desc: 'Schools, safety, community' },
-  { id: 'culturalDiversity', label: 'Cultural diversity',  desc: 'International food & community' },
-  { id: 'affordability',     label: 'Affordability',       desc: 'Lower rent relative to city' },
-  { id: 'quietResidential',  label: 'Quiet & residential', desc: 'Calm streets, less noise' },
-];
 
 function getCategoryIcon(id: string, selected: boolean) {
   const c = selected ? '#C47B2B' : '#162F4A';
@@ -326,13 +314,17 @@ export default function FindPage() {
           <p className="sel-hint">Selected: <strong>{selectedCats.size}</strong> of 10</p>
 
           <div className="category-grid">
-            {CATEGORIES.map((cat) => (
+            {LIFESTYLE_CATEGORIES.map((cat: any) => (
               <div
                 key={cat.id}
                 className={`category-card${selectedCats.has(cat.id) ? ' selected' : ''}`}
                 onClick={() => handleToggleCat(cat.id)}
               >
-                <div className="cat-check">✓</div>
+                <div className="cat-check">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 7L6 10L11 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
                 <span className="cat-icon">{getCategoryIcon(cat.id, selectedCats.has(cat.id))}</span>
                 <div className="cat-label">{cat.label}</div>
                 <div className="cat-desc">{cat.desc}</div>
@@ -355,7 +347,7 @@ export default function FindPage() {
 
           <div className="priority-list">
             {[...selectedCats].map((catId) => {
-              const cat = CATEGORIES.find((c) => c.id === catId);
+              const cat = LIFESTYLE_CATEGORIES.find((c: any) => c.id === catId);
               if (!cat) return null;
               return (
                 <div key={catId} className="priority-row">

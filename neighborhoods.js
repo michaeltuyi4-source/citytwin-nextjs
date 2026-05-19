@@ -886,16 +886,16 @@ const NEIGHBORHOODS = {
 
 // Lifestyle category definitions, used by scoring.js to match user priorities
 const LIFESTYLE_CATEGORIES = [
-  { id: "walkability",       label: "Walkability",          description: "Get errands done on foot" },
-  { id: "transitAccess",     label: "Public transit",       description: "Buses, trains, light rail" },
-  { id: "foodScene",         label: "Food scene",           description: "Restaurants, variety, quality" },
-  { id: "coffeeShops",       label: "Coffee shops",         description: "Cafes to work from or meet" },
-  { id: "outdoorSpaces",     label: "Outdoor spaces",       description: "Parks, trails, green space" },
-  { id: "nightlife",         label: "Nightlife",            description: "Bars, music, evening energy" },
-  { id: "familyFriendly",    label: "Family-friendly",      description: "Schools, safety, community" },
-  { id: "culturalDiversity", label: "Cultural diversity",   description: "International food, community" },
-  { id: "affordability",     label: "Affordability",        description: "Lower rent relative to city" },
-  { id: "quietResidential",  label: "Quiet & residential",  description: "Calm streets, less noise" },
+  { id: "walkability",       label: "Walkability",          description: "Get errands done on foot",          desc: "Get errands done on foot" },
+  { id: "transitAccess",     label: "Public transit",       description: "Buses, trains, light rail",          desc: "Buses, trains, light rail" },
+  { id: "foodScene",         label: "Food scene",           description: "Restaurants, variety, quality",      desc: "Restaurants, variety, quality" },
+  { id: "coffeeShops",       label: "Coffee shops",         description: "Cafes to work from or meet",         desc: "Cafes to work from or meet" },
+  { id: "outdoorSpaces",     label: "Outdoor spaces",       description: "Parks, trails, green space",         desc: "Parks, trails, green space" },
+  { id: "nightlife",         label: "Nightlife",            description: "Bars, music, evening energy",        desc: "Bars, music, evening energy" },
+  { id: "familyFriendly",    label: "Family-friendly",      description: "Schools, safety, community",         desc: "Schools, safety, community" },
+  { id: "culturalDiversity", label: "Cultural diversity",   description: "International food, community",      desc: "International food, community" },
+  { id: "affordability",     label: "Affordability",        description: "Lower rent relative to city",        desc: "Lower rent relative to city" },
+  { id: "quietResidential",  label: "Quiet & residential",  description: "Calm streets, less noise",           desc: "Calm streets, less noise" },
 ];
 
 // Priority weight multipliers, set by user in Step 2
