@@ -22,6 +22,7 @@ const CITIES = [
 ];
 
 const CITY_REGIONS = ['Midwest', 'South', 'West', 'Mid-Atlantic'] as const;
+const POPULAR_CITY_KEYS = ['chicago', 'charlotte', 'atlanta', 'seattle', 'phoenix'] as const;
 
 
 function getCategoryIcon(id: string, selected: boolean) {
@@ -391,8 +392,6 @@ export default function FindPage() {
           <div className="bottom-sheet">
             <div className="sheet-handle" />
             <div className="sheet-header">
-              <div className="sheet-title">Popular destinations</div>
-              <div className="sheet-subtitle">More cities added regularly</div>
               <input
                 className="sheet-search"
                 type="text"
@@ -403,6 +402,31 @@ export default function FindPage() {
               />
             </div>
             <div className="sheet-body">
+              {!citySearch && (
+                <div>
+                  <div className="sheet-region-label popular">POPULAR</div>
+                  {POPULAR_CITY_KEYS.map((key) => {
+                    const city = CITIES.find(c => c.key === key);
+                    if (!city) return null;
+                    return (
+                      <div
+                        key={`popular-${city.key}`}
+                        className={`sheet-city-row${selectedCity === city.key ? ' selected' : ''}`}
+                        onClick={() => handleSelectCity(city.key)}
+                      >
+                        <div className="sheet-city-avatar">{city.abbr}</div>
+                        <div className="sheet-city-info">
+                          <div className="sheet-city-name">{city.name}</div>
+                          <div className="sheet-city-note">{city.note}</div>
+                        </div>
+                        {selectedCity === city.key && (
+                          <span className="sheet-city-check">✓</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {CITY_REGIONS.map((region) => {
                 const regionCities = filteredCities.filter(c => c.region === region);
                 if (regionCities.length === 0) return null;

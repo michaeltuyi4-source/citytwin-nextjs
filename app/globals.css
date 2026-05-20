@@ -1003,23 +1003,12 @@ body {
 .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--blue-pale); margin: 12px auto 0; flex-shrink: 0; }
 .sheet-header {
   flex-shrink: 0;
-  padding: 8px 20px 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--blue-pale);
   background: white;
   position: sticky;
   top: 0;
   z-index: 5;
-}
-.sheet-title {
-  font-family: var(--font-display);
-  font-size: 20px;
-  color: var(--navy);
-  margin-bottom: 4px;
-}
-.sheet-subtitle {
-  font-size: 13px;
-  color: var(--slate-500);
-  margin-bottom: 14px;
 }
 .sheet-search {
   width: 100%;
@@ -1051,6 +1040,9 @@ body {
   text-transform: uppercase;
   color: var(--slate-500);
   padding: 12px 16px 4px;
+}
+.sheet-region-label.popular {
+  color: var(--amber);
 }
 .sheet-city-row {
   display: flex;
