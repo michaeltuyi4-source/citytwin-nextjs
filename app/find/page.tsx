@@ -398,7 +398,6 @@ export default function FindPage() {
                 placeholder="Search cities..."
                 value={citySearch}
                 onChange={(e) => setCitySearch(e.target.value)}
-                autoFocus
               />
             </div>
             <div className="sheet-body">

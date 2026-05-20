@@ -675,6 +675,15 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 }
+@media (min-width: 1024px) {
+  .category-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
 .category-card {
   position: relative;
   padding: 20px;
@@ -743,6 +752,16 @@ body {
   background: white;
   border: 1px solid var(--blue-pale);
   border-radius: 16px;
+}
+@media (min-width: 1024px) {
+  .priority-list {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .priority-row {
+    padding: 20px 24px;
+  }
 }
 .priority-name {
   display: flex;
@@ -985,6 +1004,17 @@ body {
 @keyframes sheetSlideUp {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
+}
+@media (max-width: 640px) {
+  .bottom-sheet {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-width: none;
+    border-radius: 20px 20px 0 0;
+    max-height: 70dvh;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
 }
 @media (min-width: 641px) {
   .bottom-sheet {
