@@ -1484,7 +1484,7 @@ body {
   text-align: center;
 }
 @media (max-width: 600px) {
-  .about { padding: 56px 20px 72px; }
+  .about { padding: 72px 20px 72px; }
   .ab-title { font-size: 1.75rem; margin-bottom: 24px; }
   .ab-body { font-size: 1rem; }
   .ab-quote { font-size: 1.1875rem; padding-left: 18px; margin: 32px 0; }
