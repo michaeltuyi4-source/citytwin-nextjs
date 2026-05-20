@@ -1352,7 +1352,7 @@ body {
 @media (max-width: 600px) {
   .coming-strip { padding: 40px 20px; }
   .cs-eyebrow { margin-bottom: 20px; }
-  .cs-row { gap: 28px; }
+  .cs-row { gap: 18px; }
   .cs-item { font-size: 0.95rem; }
 }
 
