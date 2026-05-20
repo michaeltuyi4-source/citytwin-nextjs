@@ -1419,3 +1419,75 @@ body {
   .pr-item:first-child { border-top: none; }
   .pr-item-middle { border-left: none; border-right: none; }
 }
+
+/* ─── ABOUT PAGE ─── */
+.about {
+  background: var(--white, #FFFFFF);
+  padding: 80px 24px 100px;
+}
+.ab-inner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.ab-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 16px;
+}
+.ab-title {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 400;
+  color: var(--navy);
+  line-height: 1.2;
+  margin: 0 0 32px;
+}
+.ab-body {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--navy);
+  margin: 0 0 20px;
+}
+.ab-body-end {
+  margin-bottom: 40px;
+}
+.ab-quote {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--navy);
+  line-height: 1.4;
+  border-left: 3px solid var(--amber);
+  padding: 8px 0 8px 24px;
+  margin: 40px 0;
+}
+.ab-signature {
+  margin: 0 0 56px;
+}
+.ab-sig-name {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  color: var(--navy);
+  margin-bottom: 2px;
+}
+.ab-sig-role {
+  font-size: 0.8125rem;
+  color: var(--slate-500);
+}
+.ab-cta-wrap {
+  border-top: 1px solid rgba(22, 47, 74, 0.08);
+  padding-top: 40px;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .about { padding: 56px 20px 72px; }
+  .ab-title { font-size: 1.75rem; margin-bottom: 24px; }
+  .ab-body { font-size: 1rem; }
+  .ab-quote { font-size: 1.1875rem; padding-left: 18px; margin: 32px 0; }
+  .ab-signature { margin-bottom: 40px; }
+  .ab-cta-wrap { padding-top: 32px; }
+}

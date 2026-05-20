@@ -341,7 +341,7 @@ export default function HomePage() {
 
             <div className="ft-col">
               <div className="ft-col-title">Company</div>
-              <a className="ft-link" href="#how-it-works">About</a>
+              <Link className="ft-link" href="/about">About</Link>
               <a className="ft-link" href="mailto:hello@citytwinapp.com">Contact</a>
             </div>
           </div>
