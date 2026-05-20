@@ -174,9 +174,7 @@ export default function HomePage() {
           </div>
 
           <h1 className="hero-h1">
-            Moving to a new city<br/>
-            shouldn&apos;t mean<br/>
-            <em>starting over.</em>
+            Moving to a new city shouldn&apos;t mean <em>starting over.</em>
           </h1>
 
           <p className="hero-sub">Find the neighborhood where your life already exists.</p>
