@@ -10,30 +10,20 @@ export default function HomePage() {
   const [demoOpen, setDemoOpen]     = useState(false);
   const [demoSuccess, setDemoSuccess] = useState('');
   const [demoEmail, setDemoEmail]   = useState('');
-  const [heroSlide, setHeroSlide]   = useState(0);
   const [pbSlide, setPbSlide]       = useState(0);
   const [year, setYear]             = useState('');
 
-  const heroTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const pbTimer   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setYear(String(new Date().getFullYear()));
 
-    heroTimer.current = setInterval(() => setHeroSlide((s) => (s + 1) % 2), 5000);
-    pbTimer.current   = setInterval(() => setPbSlide((s)  => (s + 1) % 3), 6000);
+    pbTimer.current = setInterval(() => setPbSlide((s) => (s + 1) % 3), 6000);
 
     return () => {
-      if (heroTimer.current) clearInterval(heroTimer.current);
-      if (pbTimer.current)   clearInterval(pbTimer.current);
+      if (pbTimer.current) clearInterval(pbTimer.current);
     };
   }, []);
-
-  function goToHeroSlide(n: number) {
-    setHeroSlide(n);
-    if (heroTimer.current) clearInterval(heroTimer.current);
-    heroTimer.current = setInterval(() => setHeroSlide((s) => (s + 1) % 2), 5000);
-  }
 
   function goToPbSlide(n: number) {
     setPbSlide(n);
@@ -67,10 +57,6 @@ export default function HomePage() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const heroSlides = [
-    '/images/couple_taking_a_walk_bold.jpg',
-    '/images/pexels-samson-katt-5225319.jpg',
-  ];
   const pbSlides = [
     '/images/friends_grabbing_coffee_2.jpg',
     '/images/pexelsrdne4920851.jpg',
@@ -93,7 +79,6 @@ export default function HomePage() {
         </div>
 
         <div className="nav-actions">
-          <a href="#" className="nav-demo" onClick={openDemo}>Request a demo</a>
           <Link href="/find" className="nav-cta">Start matching →</Link>
         </div>
 
@@ -200,99 +185,13 @@ export default function HomePage() {
             <Link href="/find" className="btn-primary">Start matching →</Link>
             <a href="#how-it-works" className="btn-ghost">See how it works</a>
           </div>
-
-          <div className="hero-trust">
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              {[
-                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face&auto=format',
-                'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face&auto=format',
-                'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face&auto=format',
-                'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face&auto=format',
-              ].map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt=""
-                  width={32}
-                  height={32}
-                  style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid white', objectFit: 'cover', marginLeft: i === 0 ? 0 : -8 }}
-                />
-              ))}
-            </div>
-            <span>Used by early movers across 8 cities</span>
-            <span className="td" />
-            <span>Free to use</span>
-          </div>
         </div>
 
         <div className="hero-right">
-          <div className="hero-slideshow">
-            {heroSlides.map((src, i) => (
-              <div
-                key={i}
-                className={`hero-slide${heroSlide === i ? ' active' : ''}`}
-                style={{ backgroundImage: `url('${src}')`, backgroundPosition: i === 1 ? 'center 40%' : 'center' }}
-              />
-            ))}
-          </div>
-
-          <div className="hero-dots">
-            {heroSlides.map((_, i) => (
-              <button
-                key={i}
-                className={`hero-dot${heroSlide === i ? ' active' : ''}`}
-                aria-label={`Slide ${i + 1}`}
-                onClick={() => goToHeroSlide(i)}
-              />
-            ))}
-          </div>
-
-          {/* Floating card A */}
-          <div className="fc fc-a">
-            <div className="fc-label">✦ Top Match · Charlotte NC</div>
-            <div className="fc-score"><span className="fc-score-n">94%</span>&nbsp;lifestyle match</div>
-            <div className="fc-name">NoDa, Charlotte</div>
-            <div className="fc-meta">6 coffee shops · gym with track · faith nearby</div>
-            <div className="fc-bar-wrap"><div className="fc-bar-fill" style={{ width: '94%' }} /></div>
-          </div>
-
-          {/* Floating card B */}
-          <div className="fc fc-b" style={{ maxWidth: 212 }}>
-            <div className="fc-label">Nearby places</div>
-            <div className="fc-tags">
-              <span className="fc-tag">☕ Smelly Cat Coffee</span>
-              <span className="fc-tag">🏃 NoDa Fitness Co.</span>
-              <span className="fc-tag">🙏 Freedom Church</span>
-              <span className="fc-tag">🌍 Global Market</span>
-            </div>
-          </div>
-
-          {/* Floating card C */}
-          <div className="fc fc-c">
-            <div className="fc-label">Community · Eventbrite</div>
-            <div style={{ fontWeight: 700, fontSize: '.84rem', color: '#162F4A', marginBottom: 3 }}>
-              Weekend Events &amp; Things To Do
-            </div>
-            <div style={{ fontSize: '.7rem', color: '#64748B', marginBottom: 8 }}>
-              Concerts, art walks, food markets &amp; more
-            </div>
-            <a
-              href="https://www.eventbrite.com/d/united-states/events/"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: '.68rem', fontWeight: 600, color: '#C47B2B', textDecoration: 'none' }}
-            >
-              Browse on Eventbrite →
-            </a>
-          </div>
-
-          {/* Map pins */}
-          <div className="pin" style={{ top: '37%', left: '43%' }} />
-          <div className="pin" style={{ top: '51%', left: '62%', animationDelay: '.9s' }} />
-          <div className="pin" style={{ top: '28%', left: '66%', animationDelay: '1.8s' }} />
-
-          <div className="hr-glow" />
-          <div className="hr-fade" />
+          <div
+            className="hero-image"
+            style={{ backgroundImage: "url('/images/hero_three_coffees.jpg')" }}
+          />
         </div>
       </section>
 
@@ -327,7 +226,7 @@ export default function HomePage() {
               <div className="step-num">2</div>
             </div>
             <div className="step-title">Tell us how you live</div>
-            <p className="step-desc">Choose your lifestyle priorities - coffee, fitness, faith, food, community - and weight each one by how much it matters.</p>
+            <p className="step-desc">Choose your lifestyle priorities (coffee, fitness, faith, food, community) and weight each one by how much it matters.</p>
           </div>
           <div className="step">
             <div className="step-ico">
@@ -345,45 +244,41 @@ export default function HomePage() {
 
       <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,var(--brand-200),transparent)', maxWidth: 800, margin: '0 auto' }} />
 
-      {/* ── NEIGHBORHOOD SHOWCASE ── */}
-      <section className="showcase" id="neighborhoods">
-        <div className="sc-inner">
-          <div className="sc-header">
-            <div>
-              <div className="eyebrow" style={{ textAlign: 'left' }}>Real results · Charlotte NC</div>
-              <div className="sc-title">Your <em>matched</em> neighborhoods</div>
-            </div>
-            <div className="sc-sub">Coffee, fitness, faith, international food - all weighted by priority.</div>
+      {/* ── SAMPLE MATCH ── */}
+      <section className="sample-match" id="sample-match">
+        <div className="sm-inner">
+          <div className="sm-header">
+            <div className="eyebrow">A real match</div>
+            <div className="sm-title">This is what you&apos;ll see.</div>
+            <p className="sm-sub">One example from the matching engine. Your result is built the same way, around how you actually live.</p>
           </div>
-          <div className="nh-track">
-            {[
-              { photo: 'https://lh3.googleusercontent.com/place-photos/AJRVUZMQlhJ6xlxM-MeX6rlYZJ-uBP0BvrObZ8UgqPL2dvM9Y40Vj_v43yN5-f8Rf9CBMo419MjP02f7aD7KBNv4KKIzxglfJHQ9TaEDa8YjGGyAaPJNtZRIZUXnOhPHNwgeaN77u8ZHSnULc7KZ7g=s1600-w800', badge: '⭐ #1 Match', score: '94%', name: 'NoDa', city: 'North Davidson Arts District · Charlotte, NC', tags: ['☕ 6 cafés', '🏃 Gym + track', '🎵 Arts scene'], fill: 94 },
-              { photo: 'https://lh3.googleusercontent.com/place-photos/AJRVUZNwqZk3kRkY251OFfmI5ck80No-UNmAWW8HtDx1K3TnzmuISgqykKRSyTMk7c8R1Ep1lOmwIEssdxFQq1eucfEI1pipkamSQLFKdIxEtZXqceElycdH7dbWWEIyhjWX1hS7HMtcQ9_VCItdlA=s1600-w800', badge: '#2 Match', score: '88%', name: 'Dilworth', city: 'Historic residential · Charlotte, NC', tags: ['🌳 Tree-lined', '☕ Café culture', '🏃 Fitness'], fill: 88 },
-              { photo: 'https://lh3.googleusercontent.com/place-photos/AJRVUZP_DEIo2aTASMA-6phgt12twYyDa2evRtjfv3OMH8cIji0slGNWlcW346N3VSUjon0Myy0F66arsPAE2lW6RcoBlKiouU6Up4PRNqNCFGYLpLG5GBcDoxxJArUtFhYVnG0pN6m7yFyI6ltO24E=s1600-w800', badge: '#3 Match', score: '82%', name: 'South End', city: 'Urban walkable · Charlotte, NC', tags: ['🚶 Walkable', '🍜 Food scene', '🌳 Parks'], fill: 82 },
-              { photo: 'https://lh3.googleusercontent.com/place-photos/AJRVUZN_5stJRkNvtztDu4S4jiqtWibqWFJJed0AEB7eGy6Uc3qqRT8jNQRm1nXYGCUDKTorAWX_TqKcjcc0iBALyQPkFdowfw5idpbhoD6lEYJWW8h1figa1gQzYBy534WkAADXI2ogg64CNWY5WZI=s1600-w800', badge: 'Chicago', score: '91%', name: 'Wicker Park', city: 'Chicago, IL · Walkable & vibrant', tags: ['☕ Café culture', '🎵 Music', '🌍 Int\'l food'], fill: 91, cityBadge: true },
-              { photo: 'https://lh3.googleusercontent.com/place-photos/AJRVUZMc1M-FVWZrQUfYw38eP2i2l69pqy2jPyQIFRqvCG-IvY436s1cZhDojDVQ5El8_cfSqIiHswumRQ-s173FCL_Ux3_tUPNR2-GGLwRlB_Fw7JrHAi85XPT-Y8OT9BJ5_X39kX4eSem95eVGLA=s1600-w800', badge: 'Atlanta', score: '89%', name: 'Old Fourth Ward', city: 'Atlanta, GA · BeltLine access', tags: ['🚶 BeltLine', '🍜 Food scene', '☕ Coffee'], fill: 89, cityBadge: true },
-            ].map((nh, i) => (
-              <div className="nh-card" key={i}>
-                <div
-                  className="nh-photo"
-                  style={{
-                    backgroundImage: `linear-gradient(rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.28) 100%), url("${nh.photo}")`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center center',
-                  }}
-                >
-                  <div className={`nh-badge ${nh.cityBadge ? 'nh-badge-city' : 'nh-badge-match'}`}>{nh.badge}</div>
-                  <div className="nh-score"><span>{nh.score}</span> match</div>
-                </div>
-                <div className="nh-body">
-                  <div className="nh-name">{nh.name}</div>
-                  <div className="nh-city">{nh.city}</div>
-                  <div className="nh-tags">{nh.tags.map((t) => <span key={t} className="nh-tag">{t}</span>)}</div>
-                  <div className="nh-bar"><div className="nh-fill" style={{ width: `${nh.fill}%` }} /></div>
-                </div>
+
+          <Link href="/find" className="sm-card">
+            <div
+              className="sm-photo"
+              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1501084817091-a4f3d1d19e07?w=900&q=60')" }}
+            >
+              <div className="sm-city-pill">Chicago, IL</div>
+              <div className="sm-score">
+                <span className="sm-score-num">77%</span>
+                <span className="sm-score-label">match</span>
               </div>
-            ))}
-          </div>
+            </div>
+
+            <div className="sm-body">
+              <div className="sm-name">Lincoln Park</div>
+              <div className="sm-tagline">Chicago&apos;s most walkable family-friendly neighborhood</div>
+
+              <div className="sm-chips">
+                <span className="sm-chip">Walkable</span>
+                <span className="sm-chip">Family-friendly</span>
+                <span className="sm-chip">Coffee culture</span>
+                <span className="sm-chip">Parks nearby</span>
+              </div>
+
+              <div className="sm-cta">See your match →</div>
+            </div>
+          </Link>
         </div>
       </section>
 
