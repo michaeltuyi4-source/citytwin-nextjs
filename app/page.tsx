@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import CTLogo from '@/components/CTLogo';
 
 export default function HomePage() {
@@ -10,26 +9,11 @@ export default function HomePage() {
   const [demoOpen, setDemoOpen]     = useState(false);
   const [demoSuccess, setDemoSuccess] = useState('');
   const [demoEmail, setDemoEmail]   = useState('');
-  const [pbSlide, setPbSlide]       = useState(0);
   const [year, setYear]             = useState('');
-
-  const pbTimer   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setYear(String(new Date().getFullYear()));
-
-    pbTimer.current = setInterval(() => setPbSlide((s) => (s + 1) % 3), 6000);
-
-    return () => {
-      if (pbTimer.current) clearInterval(pbTimer.current);
-    };
   }, []);
-
-  function goToPbSlide(n: number) {
-    setPbSlide(n);
-    if (pbTimer.current) clearInterval(pbTimer.current);
-    pbTimer.current = setInterval(() => setPbSlide((s) => (s + 1) % 3), 6000);
-  }
 
   function handleDemoSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,12 +21,6 @@ export default function HomePage() {
     const emailInput = form.querySelector<HTMLInputElement>('[type="email"]');
     if (emailInput) setDemoEmail(emailInput.value);
     setDemoSuccess('success');
-  }
-
-  function openDemo(e: React.MouseEvent) {
-    e.preventDefault();
-    setDemoOpen(true);
-    document.body.style.overflow = 'hidden';
   }
 
   function closeDemo() {
@@ -57,12 +35,6 @@ export default function HomePage() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const pbSlides = [
-    '/images/friends_grabbing_coffee_2.jpg',
-    '/images/pexelsrdne4920851.jpg',
-    '/images/pexelscottonbro7339201.jpg',
-  ];
-
   return (
     <>
       {/* ── NAV ── */}
@@ -74,7 +46,7 @@ export default function HomePage() {
 
         <div className="nav-links">
           <a className="nav-link" href="#how-it-works">How it works</a>
-          <a className="nav-link" href="#cities">Cities</a>
+          <a className="nav-link" href="#sample-match">See a match</a>
           <a className="nav-link" href="mailto:hello@citytwinapp.com">For businesses</a>
         </div>
 
@@ -280,163 +252,101 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CITIES ── */}
-      <section className="cities" id="cities">
-        <div className="sh">
-          <div className="eyebrow">8 Cities Live</div>
-          <div className="stitle">Where are you moving?</div>
-          <p className="ssub">Tap your destination city. Dimmed cities are coming soon - leave your email and we&apos;ll notify you the moment they launch.</p>
-        </div>
-        <div className="map-wrap">
-          <div className="map-bg-inner" style={{ backgroundImage: "url('/images/neighborhood_photo.jpg')" }} />
-          <div className="map-glow" />
-          <div className="us-outline" />
-          {/* Live cities */}
-          {[
-            { left: '72%', top: '55%', label: 'Charlotte', active: true },
-            { left: '62%', top: '37%', label: 'Chicago' },
-            { left: '55%', top: '61%', label: 'Atlanta' },
-            { left: '46%', top: '62%', label: 'Dallas' },
-            { left: '49%', top: '68%', label: 'Houston' },
-            { left: '19%', top: '29%', label: 'Seattle' },
-            { left: '29%', top: '52%', label: 'Phoenix' },
-            { left: '80%', top: '40%', label: 'DC Area' },
-          ].map(({ left, top, label, active }) => (
-            <div className="city-pin" style={{ left, top }} key={label}>
-              <div className={`cp-ring${active ? ' active' : ''}`}><div className="cp-core" /></div>
-              <div className="cp-label">{label}</div>
+      {/* ── PRINCIPLES ── */}
+      <section className="principles" id="principles">
+        <div className="pr-inner">
+          <div className="pr-header">
+            <div className="eyebrow">How we work</div>
+            <div className="pr-title">Three commitments behind<br/>every match.</div>
+          </div>
+
+          <div className="pr-grid">
+            <div className="pr-item">
+              <div className="pr-num">01</div>
+              <div className="pr-name">Hand researched</div>
+              <p className="pr-desc">Every neighborhood scored by a person who knows it, not a scraper. Local truth beats algorithm output.</p>
             </div>
-          ))}
-          {/* Coming soon */}
-          {[
-            { left: '38%', top: '42%', label: 'Denver' },
-            { left: '60%', top: '52%', label: 'Nashville' },
-            { left: '42%', top: '56%', label: 'Austin' },
-            { left: '77%', top: '72%', label: 'Miami' },
-            { left: '67%', top: '44%', label: 'Raleigh' },
-          ].map(({ left, top, label }) => (
-            <div className="city-pin" style={{ left, top }} key={label}>
-              <div className="cp-ring dim"><div className="cp-core" /></div>
-              <div className="cp-label dim">{label}</div>
+
+            <div className="pr-item pr-item-middle">
+              <div className="pr-num">02</div>
+              <div className="pr-name">Trade-offs surfaced</div>
+              <p className="pr-desc">Every match shows what fits and what doesn&apos;t. No neighborhood is perfect. We tell you which ones aren&apos;t.</p>
             </div>
-          ))}
-          <div className="map-selected">
-            <div className="ms-dot" />
-            <div>
-              <div className="ms-name">Charlotte, NC</div>
-              <div className="ms-sub">8 neighborhoods · updated 2 days ago</div>
+
+            <div className="pr-item">
+              <div className="pr-num">03</div>
+              <div className="pr-name">No signup wall</div>
+              <p className="pr-desc">First match is free. No email gate, no account creation. You see results before we ask for anything.</p>
             </div>
-            <Link href="/find" className="ms-btn">Start →</Link>
           </div>
         </div>
       </section>
 
-      <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,var(--brand-200),transparent)', maxWidth: 800, margin: '0 auto' }} />
-
-      {/* ── PHOTO BANNER ── */}
-      <section className="photo-banner">
-        <div className="pb-img">
-          {pbSlides.map((src, i) => (
-            <div
-              key={i}
-              className={`pb-slide${pbSlide === i ? ' active' : ''}`}
-              style={{ backgroundImage: `url('${src}')` }}
-            />
-          ))}
-          <div className="pb-overlay" />
-          <div className="pb-content">
-            <div className="pb-headline">Find your people.<br/>Find your place.</div>
-            <Link href="/find" className="pb-cta">Start matching →</Link>
-          </div>
-          <div className="pb-dots">
-            {pbSlides.map((_, i) => (
-              <button
-                key={i}
-                className={`pb-dot${pbSlide === i ? ' active' : ''}`}
-                aria-label={`Slide ${i + 1}`}
-                onClick={() => goToPbSlide(i)}
-              />
-            ))}
+      {/* ── WHAT'S COMING ── */}
+      <section className="coming-strip" id="coming">
+        <div className="cs-inner">
+          <div className="cs-block">
+            <div className="cs-eyebrow">Integrating soon with</div>
+            <div className="cs-row">
+              <span className="cs-item">Eventbrite</span>
+              <span className="cs-item">Meetup</span>
+              <span className="cs-item">OpenTable</span>
+              <span className="cs-item">Bucketlisters</span>
+            </div>
           </div>
         </div>
       </section>
-
-      {/* ── COMMUNITY ── */}
-      <section className="community" id="community">
-        <div className="comm-grid" style={{ gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 12 }}>
-          {/* Meetup — Young Professionals */}
-          <a className="cc" href="https://www.meetup.com/find/?keywords=young+professionals" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', minHeight: 200 }}>
-            <img src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=160&fit=crop&crop=center&auto=format" alt="Young professionals networking" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10, display: 'block', marginBottom: 14 }} />
-            <div className="cc-src">Meetup</div>
-            <div className="cc-title">Young Professionals Near You</div>
-            <div className="cc-meta">Browse groups in your new city</div>
-            <div style={{ fontSize: '.72rem', fontWeight: 600, color: 'var(--amber)', marginTop: 'auto', paddingTop: 10 }}>Explore on Meetup →</div>
-          </a>
-          {/* Eventbrite — Weekend Events */}
-          <a className="cc" href="https://www.eventbrite.com/d/united-states/events/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', minHeight: 200 }}>
-            <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&h=160&fit=crop&crop=center&auto=format" alt="Outdoor weekend event crowd" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10, display: 'block', marginBottom: 14 }} />
-            <div className="cc-src">Eventbrite</div>
-            <div className="cc-title">Weekend Events &amp; Things To Do</div>
-            <div className="cc-meta">Concerts, art walks, food markets &amp; more</div>
-            <div style={{ fontSize: '.72rem', fontWeight: 600, color: 'var(--amber)', marginTop: 'auto', paddingTop: 10 }}>Browse on Eventbrite →</div>
-          </a>
-          {/* Bucketlisters — Hidden Gems */}
-          <a className="cc" href="https://bucketlisters.com/experiences" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', minHeight: 200 }}>
-            <img src="https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=400&h=160&fit=crop&crop=center&auto=format" alt="People exploring a city neighborhood" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10, display: 'block', marginBottom: 14 }} />
-            <div className="cc-src">Bucketlisters</div>
-            <div className="cc-title">Hidden Gems &amp; Local Experiences</div>
-            <div className="cc-meta">Unique things to do in every city</div>
-            <div style={{ fontSize: '.72rem', fontWeight: 600, color: 'var(--amber)', marginTop: 'auto', paddingTop: 10 }}>Discover more →</div>
-          </a>
-          {/* OpenTable — Restaurants */}
-          <a className="cc" href="https://www.opentable.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', minHeight: 200 }}>
-            <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=160&fit=crop&crop=center&auto=format" alt="Restaurant dining experience" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10, display: 'block', marginBottom: 14 }} />
-            <div className="cc-src">OpenTable</div>
-            <div className="cc-title">Restaurant Reservations Nearby</div>
-            <div className="cc-meta">Book a table at top-rated restaurants in your new neighborhood</div>
-            <div style={{ fontSize: '.72rem', fontWeight: 600, color: 'var(--amber)', marginTop: 'auto', paddingTop: 10 }}>Reserve a table →</div>
-          </a>
-        </div>
-
-        <div className="comm-copy">
-          <div className="eyebrow">Coming soon</div>
-          <div className="stitle">Find your people,<br/>not just your place</div>
-          <p className="ssub">Finding the right neighborhood is step one. CityTwin goes further - connecting you to local events, community groups, and people who share your lifestyle.</p>
-          <div className="int-logos">
-            <div className="int-logo"><div className="int-dot" style={{ background: '#F05537' }} />Eventbrite</div>
-            <div className="int-logo"><div className="int-dot" style={{ background: '#ED1C40' }} />Meetup</div>
-            <div className="int-logo"><div className="int-dot" style={{ background: 'var(--amber)' }} />Local guides</div>
-          </div>
-          <Link href="/find" className="btn-primary">Try it free →</Link>
-        </div>
-      </section>
-
-      <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,var(--brand-200),transparent)', maxWidth: 800, margin: '0 auto' }} />
 
       {/* ── FOOTER ── */}
       <footer className="footer">
         <div className="ft-top">
-          <div>
+          <div className="ft-brand-col">
             <div className="ft-brand">
               <CTLogo size={28} fillColor="#244B75" />
               <span className="ft-brand-name">CityTwin</span>
             </div>
             <div className="ft-tagline">Helping movers preserve their lifestyle when they relocate.</div>
           </div>
+
           <div className="ft-links">
-            <div>
+            <div className="ft-col">
               <div className="ft-col-title">Product</div>
               <a className="ft-link" href="#how-it-works">How it works</a>
-              <a className="ft-link" href="#cities">Cities covered</a>
+              <a className="ft-link" href="#sample-match">See a match</a>
+              <a className="ft-link" href="#principles">Our principles</a>
               <a className="ft-link" href="mailto:hello@citytwinapp.com">For businesses</a>
             </div>
-            <div>
+
+            <div className="ft-col">
+              <div className="ft-col-title">Cities live</div>
+              <Link className="ft-link" href="/find">Charlotte, NC</Link>
+              <Link className="ft-link" href="/find">Chicago, IL</Link>
+              <Link className="ft-link" href="/find">Atlanta, GA</Link>
+              <Link className="ft-link" href="/find">Dallas, TX</Link>
+              <Link className="ft-link" href="/find">Houston, TX</Link>
+              <Link className="ft-link" href="/find">Seattle, WA</Link>
+              <Link className="ft-link" href="/find">Phoenix, AZ</Link>
+              <Link className="ft-link" href="/find">Montgomery County, MD</Link>
+            </div>
+
+            <div className="ft-col">
+              <div className="ft-col-title">Coming soon</div>
+              <div className="ft-link ft-link-dim">Denver</div>
+              <div className="ft-link ft-link-dim">Nashville</div>
+              <div className="ft-link ft-link-dim">Austin</div>
+              <div className="ft-link ft-link-dim">Miami</div>
+              <div className="ft-link ft-link-dim">Raleigh</div>
+              <a className="ft-link-request" href="mailto:hello@citytwinapp.com?subject=Request%20your%20city">Request your city →</a>
+            </div>
+
+            <div className="ft-col">
               <div className="ft-col-title">Company</div>
               <a className="ft-link" href="#how-it-works">About</a>
               <a className="ft-link" href="mailto:hello@citytwinapp.com">Contact</a>
             </div>
           </div>
         </div>
+
         <div className="ft-bottom">
           <div className="ft-copy">© {year} CityTwin LLC. All rights reserved.</div>
           <div className="ft-legal">
