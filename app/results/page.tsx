@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -78,9 +78,13 @@ export default function ResultsPage() {
   const [activeIdx, setActiveIdx]     = useState(0);
   const [cityKey, setCityKey]         = useState('');
   const [mounted, setMounted]         = useState(false);
-  const [authOpen, setAuthOpen]       = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [unlocked, setUnlocked]       = useState(false);
+  const [authOpen, setAuthOpen]             = useState(false);
+  const [upgradeOpen, setUpgradeOpen]       = useState(false);
+  const [unlocked, setUnlocked]             = useState(false);
+  const [session, setSession]               = useState<{ user: { id: string } } | null>(null);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const supabase = createClient();
 
@@ -95,8 +99,6 @@ export default function ResultsPage() {
 
     if (profile?.tier === 'premium') {
       setUnlocked(true);
-    } else {
-      setUpgradeOpen(true);
     }
   }, [supabase]);
 
@@ -130,37 +132,67 @@ export default function ResultsPage() {
       }
     }
 
-    // If returning from Stripe success, check tier directly from Supabase
+    // If returning from Stripe success, poll tier until webhook updates it
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
       supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          supabase
-            .from('profiles')
-            .select('tier')
-            .eq('id', session.user.id)
-            .single()
-            .then(({ data: profile }) => {
-              if (profile?.tier === 'premium') setUnlocked(true);
-            });
-        }
+        if (!session) return;
+        supabase
+          .from('profiles')
+          .select('tier')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data: profile }) => {
+            if (profile?.tier === 'premium') {
+              setUnlocked(true);
+              return;
+            }
+            // Webhook hasn't updated yet — poll every second for up to 15s
+            setPaymentProcessing(true);
+            let attempts = 0;
+            pollRef.current = setInterval(async () => {
+              attempts++;
+              const { data: p } = await supabase
+                .from('profiles')
+                .select('tier')
+                .eq('id', session.user.id)
+                .single();
+              if (p?.tier === 'premium') {
+                setUnlocked(true);
+                setPaymentProcessing(false);
+                clearInterval(pollRef.current!);
+                pollRef.current = null;
+              } else if (attempts >= 15) {
+                clearInterval(pollRef.current!);
+                pollRef.current = null;
+                // paymentProcessing stays true — message remains visible
+              }
+            }, 1000);
+          });
       });
     }
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [supabase, router]);
 
   // Auth gate
   useEffect(() => {
     async function applyGate() {
       const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
       if (session) await handleSession(session);
     }
     applyGate();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        setSession(session);
         setAuthOpen(false);
         await handleSession(session);
       } else if (event === 'SIGNED_OUT') {
+        setSession(null);
         setUpgradeOpen(false);
         setUnlocked(false);
       }
@@ -191,8 +223,13 @@ export default function ResultsPage() {
 
   // Handlers
   function handleTabClick(idx: number) {
+    console.log('[gate] handleTabClick', { idx, hasSession: !!session, unlocked });
     if (idx > 0 && !unlocked) {
-      setAuthOpen(true);
+      if (session) {
+        setUpgradeOpen(true);
+      } else {
+        setAuthOpen(true);
+      }
       return;
     }
     setActiveIdx(idx);
@@ -317,6 +354,14 @@ export default function ResultsPage() {
           })}
         </div>
       </div>
+
+      {paymentProcessing && (
+        <div style={{ maxWidth: 720, margin: '12px auto 0', padding: '0 20px' }}>
+          <div style={{ background: 'rgba(196,123,43,0.08)', border: '1px solid rgba(196,123,43,0.25)', borderRadius: 12, padding: '12px 16px', fontSize: 13, color: 'var(--navy)', lineHeight: 1.5 }}>
+            Your payment is processing. If your matches don&apos;t unlock in a moment, refresh the page.
+          </div>
+        </div>
+      )}
 
       {activeMatch && (
         <article className="rp-card" key={activeIdx}>
@@ -497,6 +542,7 @@ export default function ResultsPage() {
         onClose={() => setAuthOpen(false)}
         heading="Unlock all matches"
         sub="See your #2 and #3 neighborhood matches. Free account, no credit card required."
+        onSignupSuccess={() => setUpgradeOpen(true)}
       />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
 

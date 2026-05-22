@@ -8,6 +8,7 @@ interface AuthModalProps {
   onClose: () => void;
   heading?: string;
   sub?: string;
+  onSignupSuccess?: () => void;
 }
 
 export default function AuthModal({
@@ -15,6 +16,7 @@ export default function AuthModal({
   onClose,
   heading = 'Unlock all matches',
   sub = 'Create a free account — no credit card required.',
+  onSignupSuccess,
 }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('signup');
   const [email, setEmail]       = useState('');
@@ -37,7 +39,7 @@ export default function AuthModal({
     try {
       if (activeTab === 'signup') {
         const { error: err } = await supabase.auth.signUp({ email, password });
-        if (err) { setError(err.message); } else { setSuccess('Check your email to confirm your account.'); }
+        if (err) { setError(err.message); } else { setSuccess('Check your email to confirm your account.'); onSignupSuccess?.(); }
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) setError(err.message);
