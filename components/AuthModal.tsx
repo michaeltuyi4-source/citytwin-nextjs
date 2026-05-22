@@ -28,6 +28,7 @@ export default function AuthModal({
   const supabase = createClient();
 
   async function handleSubmit() {
+    console.log('[auth-modal] handleSubmit start', { activeTab, hasEmail: !!email, hasPassword: !!password });
     setError('');
     setSuccess('');
     if (!email || !password) { setError('Please enter your email and password.'); return; }
@@ -43,9 +44,14 @@ export default function AuthModal({
         setSuccess('Check your email to confirm your account.');
       }
     } else {
-      const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-      if (err) setError(err.message);
-      // Success handled by parent via onAuthStateChange
+      try {
+        const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+        console.log('[auth-modal] signInWithPassword result', { userId: data?.user?.id ?? null, err });
+        if (err) setError(err.message);
+      } catch (thrown) {
+        console.error('[auth-modal] signInWithPassword threw (not returned error)', thrown);
+        setError('Unexpected error — please try again.');
+      }
     }
 
     setLoading(false);
