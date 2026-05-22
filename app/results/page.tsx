@@ -86,14 +86,12 @@ export default function ResultsPage() {
 
   // Session check
   const handleSession = useCallback(async (session: { user: { id: string } } | null) => {
-    console.log('[auth-gate] handleSession called', { userId: session?.user?.id ?? null });
     if (!session) return;
-    const { data: profile, error: profileErr } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('tier')
       .eq('id', session.user.id)
       .single();
-    console.log('[auth-gate] profile result', { tier: profile?.tier, profileErr });
 
     if (profile?.tier === 'premium') {
       setUnlocked(true);
@@ -159,7 +157,6 @@ export default function ResultsPage() {
     applyGate();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[auth-gate] onAuthStateChange fired', { event, userId: session?.user?.id ?? null });
       if (event === 'SIGNED_IN' && session) {
         setAuthOpen(false);
         await handleSession(session);

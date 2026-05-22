@@ -28,33 +28,26 @@ export default function AuthModal({
   const supabase = createClient();
 
   async function handleSubmit() {
-    console.log('[auth-modal] handleSubmit start', { activeTab, hasEmail: !!email, hasPassword: !!password });
     setError('');
     setSuccess('');
     if (!email || !password) { setError('Please enter your email and password.'); return; }
     if (password.length < 8)  { setError('Password must be at least 8 characters.');  return; }
 
     setLoading(true);
-
-    if (activeTab === 'signup') {
-      const { error: err } = await supabase.auth.signUp({ email, password });
-      if (err) {
-        setError(err.message);
+    try {
+      if (activeTab === 'signup') {
+        const { error: err } = await supabase.auth.signUp({ email, password });
+        if (err) { setError(err.message); } else { setSuccess('Check your email to confirm your account.'); }
       } else {
-        setSuccess('Check your email to confirm your account.');
-      }
-    } else {
-      try {
-        const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
-        console.log('[auth-modal] signInWithPassword result', { userId: data?.user?.id ?? null, err });
+        const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) setError(err.message);
-      } catch (thrown) {
-        console.error('[auth-modal] signInWithPassword threw (not returned error)', thrown);
-        setError('Unexpected error — please try again.');
       }
+    } catch (thrown) {
+      console.error('[auth-modal] signInWithPassword threw (not returned error)', thrown);
+      setError('Unexpected error — please try again.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function handleGoogle() {
