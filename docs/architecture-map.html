@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CityTwin — Architecture Map</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0e1119;
+  --surface: #161922;
+  --surface2: #1d2130;
+  --border: #252b3d;
+  --text: #dde3f0;
+  --text-muted: #68738f;
+  --text-dim: #3e4760;
+  --page:      #3b82f6;
+  --component: #f59e0b;
+  --data:      #10b981;
+  --api:       #8b5cf6;
+  --lib:       #06b6d4;
+  --external:  #94a3b8;
+  --edge-import: #475569;
+  --edge-render: #6366f1;
+  --edge-call:   #f59e0b;
+  --edge-data:   #10b981;
+  --edge-event:  #f97316;
+  --fix-critical: #ef4444;
+  --fix-high:     #f97316;
+  --fix-medium:   #eab308;
+  --fix-info:     #3b82f6;
+  --fix-low:      #6b7280;
+  --sidebar-w: 370px;
+}
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif; }
+
+/* ── HEADER ── */
+.header { display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; height: 54px; }
+.header-brand { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; }
+.header-sub { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.header-sep { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+.filters { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+.chip { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid; transition: opacity 0.15s; user-select: none; letter-spacing: .02em; }
+.chip.off { opacity: 0.28; }
+.header-hint { font-size: 11px; color: var(--text-dim); white-space: nowrap; margin-left: auto; }
+.reset-btn { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); transition: background 0.1s; white-space: nowrap; }
+.reset-btn:hover { background: #252b3d; }
+
+/* ── LAYOUT ── */
+.layout { display: flex; height: calc(100vh - 54px); }
+
+/* ── CANVAS ── */
+.canvas-wrap { flex: 1; overflow: hidden; position: relative; background: var(--bg); cursor: grab; }
+.canvas-wrap.dragging { cursor: grabbing; }
+#mainSvg { width: 100%; height: 100%; display: block; }
+
+/* ── SIDEBAR ── */
+.sidebar { width: var(--sidebar-w); flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: width 0.2s; }
+.sidebar.collapsed { width: 0; border-left: none; }
+.sidebar-inner { padding: 18px 18px 28px; overflow-y: auto; flex: 1; min-width: var(--sidebar-w); }
+.sb-empty { color: var(--text-muted); font-size: 13px; text-align: center; padding: 60px 20px; line-height: 1.6; }
+.sb-empty-icon { font-size: 28px; margin-bottom: 10px; }
+.sb-pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 10px; }
+.sb-title { font-size: 15px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--text); margin-bottom: 8px; word-break: break-all; line-height: 1.4; }
+.sb-desc { font-size: 12.5px; line-height: 1.65; color: var(--text-muted); margin-bottom: 14px; }
+.sb-section { font-size: 9.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 7px; margin-top: 16px; }
+.sb-mono { font-size: 11.5px; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--text-muted); background: rgba(255,255,255,.04); padding: 6px 10px; border-radius: 6px; margin-bottom: 2px; }
+.sb-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.sb-tag { font-size: 11px; font-family: 'SF Mono', 'Fira Code', monospace; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; color: var(--text-muted); }
+.sb-fix { border-radius: 8px; padding: 9px 11px; margin-bottom: 7px; border-left: 3px solid; background: rgba(255,255,255,.03); }
+.sb-fix-label { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.sb-fix-detail { font-size: 11.5px; line-height: 1.55; color: var(--text-muted); }
+.sb-severity { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+.sb-conns { display: flex; flex-direction: column; gap: 4px; }
+.sb-conn { display: flex; align-items: center; gap: 7px; font-size: 12px; padding: 5px 8px; border-radius: 6px; background: rgba(255,255,255,.025); cursor: pointer; border: 1px solid transparent; transition: background 0.1s; }
+.sb-conn:hover { background: rgba(255,255,255,.06); }
+.sb-conn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sb-conn-name { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-conn-via { color: var(--text-dim); font-size: 10px; white-space: nowrap; }
+.sb-divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* ── LEGEND ── */
+.legend { position: absolute; bottom: 16px; left: 16px; background: rgba(14,17,25,0.88); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; z-index: 4; backdrop-filter: blur(6px); }
+.legend-title { font-size: 9px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 7px; }
+.legend-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; font-size: 11px; color: var(--text-muted); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.legend-line-seg { height: 2px; border-radius: 1px; flex-shrink: 0; }
+
+/* ── ZOOM ── */
+.zoom-controls { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 4px; z-index: 4; }
+.zoom-btn { width: 30px; height: 30px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.zoom-btn:hover { background: var(--surface2); }
+.zoom-pct { font-size: 10px; color: var(--text-dim); text-align: center; margin-top: 2px; }
+
+/* ── TOOLTIP ── */
+#tooltip { position: fixed; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; font-size: 11px; color: var(--text-muted); pointer-events: none; z-index: 100; display: none; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-brand">CityTwin — Architecture Map</div>
+    <div class="header-sub">Next.js 14 · Supabase · Stripe · Mapbox</div>
+  </div>
+  <div class="header-sep"></div>
+  <div class="filters" id="filters"></div>
+  <button class="reset-btn" id="resetBtn" title="Reset view">Reset view</button>
+  <div class="header-hint">Scroll to zoom · Drag to pan · Click node for details</div>
+</div>
+
+<div class="layout">
+  <div class="canvas-wrap" id="canvasWrap">
+    <svg id="mainSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend">
+      <div class="legend-title">Edge types</div>
+      <div class="legend-row"><div class="legend-line-seg" style="width:22px;background:#6366f1"></div>renders component</div>
+      <div class="legend-row"><div class="legend-line-seg" style="width:22px;background:#f59e0b"></div>function call / POST</div>
+      <div class="legend-row"><div class="legend-line-seg" style="width:22px;background:#10b981"></div>sessionStorage pass</div>
+      <div class="legend-row"><div class="legend-line-seg" style="width:22px;background:#475569;border-top:1px dashed #475569;height:0"></div>static import</div>
+      <div class="legend-row"><div class="legend-line-seg" style="width:22px;background:transparent;border-top:1.5px dashed #f97316;height:0"></div>webhook event</div>
+    </div>
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="zoomIn">+</button>
+      <button class="zoom-btn" id="zoomOut">−</button>
+      <button class="zoom-btn" onclick="fitView()" title="Fit to screen" style="font-size:12px">⊡</button>
+      <div class="zoom-pct" id="zoomPct">68%</div>
+    </div>
+  </div>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-inner" id="sidebarInner">
+      <div class="sb-empty">
+        <div class="sb-empty-icon">◈</div>
+        Click any node to inspect it — file path, imports, exports, connected nodes, and any known fixes or bugs.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────────────────────────
+
+const TYPE_COLOR = {
+  page:      '#3b82f6',
+  component: '#f59e0b',
+  data:      '#10b981',
+  api:       '#8b5cf6',
+  lib:       '#06b6d4',
+  external:  '#94a3b8',
+};
+
+const EDGE_STYLE = {
+  import: { stroke: '#475569', width: 1,   dash: '5,4', opacity: 0.45 },
+  render: { stroke: '#6366f1', width: 1.5, dash: null,  opacity: 0.65 },
+  call:   { stroke: '#f59e0b', width: 1.5, dash: null,  opacity: 0.65 },
+  data:   { stroke: '#10b981', width: 2,   dash: null,  opacity: 0.72 },
+  event:  { stroke: '#f97316', width: 1.5, dash: '4,3', opacity: 0.65 },
+};
+
+const CLUSTERS = [
+  { id:'pages',     label:'Pages',             color:'#3b82f6', x:40,   y:205, w:310, h:735 },
+  { id:'components',label:'Components',        color:'#f59e0b', x:475,  y:205, w:295, h:470 },
+  { id:'data',      label:'Core Data / Logic', color:'#10b981', x:475,  y:745, w:295, h:420 },
+  { id:'api',       label:'API Routes',        color:'#8b5cf6', x:925,  y:295, w:290, h:325 },
+  { id:'lib',       label:'Lib / Utils',       color:'#06b6d4', x:925,  y:685, w:290, h:430 },
+  { id:'external',  label:'External Services', color:'#94a3b8', x:1360, y:300, w:270, h:630 },
+];
+
+const NODES = [
+  {
+    id:'layout', x:200, y:280, cluster:'pages', type:'page',
+    label:'app/layout.tsx',
+    desc:'Root layout. Loads DM Serif Display + DM Sans via next/font/google, imports mapbox-gl.css globally, and sets OG/Twitter meta tags with canonical URL (https://www.citytwinapp.com).',
+    exports:['RootLayout'],
+    imports:['next/font/google', 'mapbox-gl/dist/mapbox-gl.css'],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'home', x:200, y:400, cluster:'pages', type:'page',
+    label:'app/page.tsx',
+    desc:'Homepage. Sections: Hero → How It Works → Sample Match → Principles → Partners strip (Eventbrite, Meetup, OpenTable, Bucketlisters) → Footer. Includes Demo modal for B2B leads.',
+    exports:['HomePage'],
+    imports:['CTLogo', 'Link'],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'about', x:200, y:520, cluster:'pages', type:'page',
+    label:'app/about/page.tsx',
+    desc:"About page. Founder's editorial piece. Same nav/footer as homepage. Nav links use /#how-it-works and /#sample-match with leading slash for cross-page anchor navigation.",
+    exports:['AboutPage'],
+    imports:['CTLogo', 'Link'],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'find', x:200, y:640, cluster:'pages', type:'page',
+    label:'app/find/page.tsx',
+    desc:'3-step wizard. Step 1: city picker (bottom-sheet with search + popular/regional groups). Step 2: lifestyle category selection (pick ≥3). Step 3: priority weighting (must-have=3×, important=2×, nice-to-have=1×). On submit: calls getTopMatches(), saves to sessionStorage + localStorage, pushes to /results.',
+    exports:['FindPage'],
+    imports:['neighborhoods.js (LIFESTYLE_CATEGORIES)', 'scoring.js (getTopMatches)', 'lib/types.ts (PriorityLabel)', 'CTLogo'],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'results', x:200, y:760, cluster:'pages', type:'page',
+    label:'app/results/page.tsx',
+    desc:'Results page. Reads sessionStorage. Shows top-3 match tabs (auth gate: free tier sees tab 1 only). Stripe success polling (setInterval × 15 attempts). Session-aware gate: signed-in free users → UpgradeModal; guests → AuthModal. PaymentProcessing banner while webhook lands.',
+    exports:['ResultsPage'],
+    imports:['lib/supabase.ts', 'lib/types.ts', 'lib/photos.ts', 'AuthModal', 'UpgradeModal'],
+    fixes:['fix-auth-stuck', 'fix-signed-in-gate', 'fix-upgrade-autofire', 'fix-stripe-race'],
+    bugs:['bug-session-null'],
+  },
+  {
+    id:'places', x:200, y:880, cluster:'pages', type:'page',
+    label:'app/places/page.tsx',
+    desc:"Places explorer. Mapbox GL map (force-dynamic). 12 category filter chips. Fetches venues from Azure API (citytwin-api.azurewebsites.net). Haversine distance on client. Auth gate for neighborhood switcher. Results neighbor is the user's #1 match by default.",
+    exports:['PlacesPage'],
+    imports:['lib/supabase.ts', 'lib/types.ts', 'AuthModal', 'UpgradeModal', 'CTLogo'],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'ctlogo', x:620, y:280, cluster:'components', type:'component',
+    label:'components/CTLogo.tsx',
+    desc:'Inline SVG logo component. Props: size (number), fillColor (string, default #244B75). Used in nav brand and footer brand across all pages.',
+    exports:['CTLogo'],
+    imports:[],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'authmodal', x:620, y:430, cluster:'components', type:'component',
+    label:'components/AuthModal.tsx',
+    desc:'Signup/login modal with tabs. Google OAuth via signInWithOAuth. Props: isOpen, onClose, heading, sub, onSignupSuccess. Uses if (!isOpen) return null (stays mounted, state persists). try/catch/finally ensures setLoading(false) on all code paths including cookie-write throws from @supabase/ssr.',
+    exports:['AuthModal'],
+    imports:['lib/supabase.ts (createClient)'],
+    fixes:['fix-auth-stuck'],
+    bugs:[],
+  },
+  {
+    id:'upgrademodal', x:620, y:620, cluster:'components', type:'component',
+    label:'components/UpgradeModal.tsx',
+    desc:'Pricing modal. $9 one-time lifetime / $5/mo subscription. Calls POST /api/checkout, receives Stripe URL, sets window.location.href to redirect. Reads userId from Supabase session to pass to checkout.',
+    exports:['UpgradeModal'],
+    imports:['lib/supabase.ts (createClient)'],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'neighborhoods', x:620, y:835, cluster:'data', type:'data',
+    label:'neighborhoods.js',
+    desc:'All hand-researched neighborhood data. Exports: NEIGHBORHOODS dict (keyed by city), LIFESTYLE_CATEGORIES array (10 categories with id/label/desc), PRIORITY_WEIGHTS ({must-have:3, important:2, nice-to-have:1}). Each neighborhood has scores (1-10), rentRange, walkScore, highlights[], gaps[], bestFor[], coords, categoryPhrases override map.',
+    exports:['NEIGHBORHOODS', 'LIFESTYLE_CATEGORIES', 'PRIORITY_WEIGHTS'],
+    imports:[],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'scoring', x:620, y:980, cluster:'data', type:'data',
+    label:'scoring.js',
+    desc:"Matching engine. Pure weighted arithmetic: score × weight → raw total → normalize against maxPossibleScore → match%. getTopMatches() scores all neighborhoods, sorts desc, returns top 3 with insightLine, phraseChips, gaps. detectGaps() surfaces must-have conflicts (score ≤5) + prewritten neighborhood trade-offs.",
+    exports:['getTopMatches', 'scoreNeighborhood (internal)', 'detectGaps (internal)'],
+    imports:['neighborhoods.js (NEIGHBORHOODS, PRIORITY_WEIGHTS)', 'phrases.js (getPhrasesForMatch, buildInsight)'],
+    fixes:[], bugs:['bug-dead-exports'],
+  },
+  {
+    id:'phrases', x:620, y:1120, cluster:'data', type:'data',
+    label:'phrases.js',
+    desc:'90 phrase templates: 10 categories × 3 bands (exceptional/strong/good). Bands mixed/limited intentionally absent — scores below 7 feed gaps, not chips. stableHash() picks variant deterministically (same neighborhood+category always → same phrase). buildInsight() generates a 1-2 sentence insight line from must-have analysis.',
+    exports:['getPhrasesForMatch', 'buildInsight', 'scoreBand', 'CATEGORY_LABELS', 'PHRASES'],
+    imports:[],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'checkout', x:1070, y:370, cluster:'api', type:'api',
+    label:'app/api/checkout/route.ts',
+    desc:'POST handler. Creates Stripe Checkout session. Reads userId from Supabase session (server-side @supabase/ssr). Supports two modes: lifetime ($9, payment) and monthly ($5, subscription). Sets userId in session metadata. Success URL: /results?success=true.',
+    exports:['POST'],
+    imports:['stripe', '@supabase/ssr'],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'webhook', x:1070, y:570, cluster:'api', type:'api',
+    label:'app/api/webhook/route.ts',
+    desc:"POST handler. Verifies Stripe webhook signature (STRIPE_WEBHOOK_SECRET). Handles checkout.session.completed. Updates profiles.tier = 'premium' via Supabase service-role key (bypasses RLS). Uses @supabase/supabase-js createClient directly (not @supabase/ssr).",
+    exports:['POST'],
+    imports:['stripe', '@supabase/supabase-js (service role key)'],
+    fixes:['fix-stripe-race'],
+    bugs:[],
+  },
+  {
+    id:'supabase', x:1070, y:760, cluster:'lib', type:'lib',
+    label:'lib/supabase.ts',
+    desc:'createClient() returns createBrowserClient singleton from @supabase/ssr, keyed by NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY. Singleton pattern prevents multiple client instances. Cookie-based session storage (works with SSR).',
+    exports:['createClient'],
+    imports:['@supabase/ssr (createBrowserClient)'],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'types', x:1070, y:920, cluster:'lib', type:'lib',
+    label:'lib/types.ts',
+    desc:'TypeScript interfaces shared across the app. NeighborhoodScores (10 category fields), Coords ({lat, lng}), Gap ({text, isMustHave}), PhraseChip ({category, phrase, score, weight}), MatchResult (full shape returned by getTopMatches), Place (venue from Azure API), PriorityLabel ("must-have" | "important" | "nice-to-have"), UserPriorities.',
+    exports:['NeighborhoodScores', 'Coords', 'Gap', 'PhraseChip', 'MatchResult', 'Place', 'PriorityLabel', 'UserPriorities'],
+    imports:[],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'photos', x:1070, y:1080, cluster:'lib', type:'lib',
+    label:'lib/photos.ts',
+    desc:'Unsplash photo URLs for hero images. CITY_PHOTOS dict (8 cities). NEIGHBORHOOD_PHOTOS dict (2 confirmed: wicker-park, lincoln-park; others fall back to city photo). Helper: getNeighborhoodPhoto(id, cityKey) → URL. getCityLabel(key) → display name.',
+    exports:['CITY_PHOTOS', 'NEIGHBORHOOD_PHOTOS', 'getCityPhoto', 'getNeighborhoodPhoto', 'getCityLabel'],
+    imports:[],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'ext-supabase', x:1490, y:380, cluster:'external', type:'external',
+    label:'Supabase',
+    desc:'Auth service (email/password + Google OAuth). Database: profiles table with id (UUID) and tier ("free"|"premium"). Cookie-based sessions via @supabase/ssr on client; service-role key in webhook for RLS bypass.',
+    exports:[], imports:[],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'ext-stripe', x:1490, y:550, cluster:'external', type:'external',
+    label:'Stripe',
+    desc:'Checkout sessions: one-time lifetime ($9) and monthly subscription ($5). Webhook on checkout.session.completed triggers DB tier upgrade. Signing secret (STRIPE_WEBHOOK_SECRET) validates webhook authenticity.',
+    exports:[], imports:[],
+    fixes:['fix-stripe-race'], bugs:[],
+  },
+  {
+    id:'ext-mapbox', x:1490, y:720, cluster:'external', type:'external',
+    label:'Mapbox GL JS',
+    desc:'Interactive map on Places page. NEXT_PUBLIC_MAPBOX_TOKEN. CSS loaded globally in layout.tsx. Dynamic import (import("mapbox-gl")) on client. Light-v11 style. NavigationControl added. 100ms init delay to allow DOM measurement.',
+    exports:[], imports:[],
+    fixes:[], bugs:[],
+  },
+  {
+    id:'ext-azure', x:1490, y:890, cluster:'external', type:'external',
+    label:'Azure Places API',
+    desc:'citytwin-api.azurewebsites.net/api/places. Returns venues by category for a neighborhood. Used only on the Places page. Place shape: id, name, category, address, lat, lng, rating, url. Client-side haversine distance computed after fetch.',
+    exports:[], imports:[],
+    fixes:[], bugs:[],
+  },
+];
+
+const EDGES = [
+  // layout
+  { from:'layout',      to:'ext-mapbox',  type:'import', label:'CSS global' },
+  // find flow
+  { from:'find',        to:'neighborhoods',type:'import', label:'LIFESTYLE_CATEGORIES' },
+  { from:'find',        to:'scoring',      type:'call',   label:'getTopMatches()' },
+  { from:'find',        to:'types',        type:'import', label:'PriorityLabel' },
+  { from:'find',        to:'results',      type:'data',   label:'sessionStorage' },
+  { from:'find',        to:'places',       type:'data',   label:'sessionStorage' },
+  // results page
+  { from:'results',     to:'authmodal',    type:'render', label:'renders' },
+  { from:'results',     to:'upgrademodal', type:'render', label:'renders' },
+  { from:'results',     to:'supabase',     type:'call',   label:'auth + profiles' },
+  { from:'results',     to:'photos',       type:'import', label:'hero photos' },
+  { from:'results',     to:'types',        type:'import', label:'MatchResult' },
+  // places page
+  { from:'places',      to:'authmodal',    type:'render', label:'renders' },
+  { from:'places',      to:'upgrademodal', type:'render', label:'renders' },
+  { from:'places',      to:'supabase',     type:'call',   label:'auth gate' },
+  { from:'places',      to:'types',        type:'import', label:'MatchResult, Place' },
+  { from:'places',      to:'ext-mapbox',   type:'call',   label:'map render' },
+  { from:'places',      to:'ext-azure',    type:'call',   label:'fetch venues' },
+  // components
+  { from:'authmodal',   to:'supabase',     type:'call',   label:'createClient()' },
+  { from:'upgrademodal',to:'checkout',     type:'call',   label:'POST /api/checkout' },
+  // data layer
+  { from:'scoring',     to:'neighborhoods',type:'import', label:'NEIGHBORHOODS' },
+  { from:'scoring',     to:'phrases',      type:'import', label:'getPhrasesForMatch' },
+  // api → external
+  { from:'checkout',    to:'ext-stripe',   type:'call',   label:'create session' },
+  { from:'checkout',    to:'ext-supabase', type:'call',   label:'get user session' },
+  { from:'webhook',     to:'ext-stripe',   type:'call',   label:'verify signature' },
+  { from:'webhook',     to:'ext-supabase', type:'call',   label:"update tier='premium'" },
+  // lib → external
+  { from:'supabase',    to:'ext-supabase', type:'call',   label:'createBrowserClient' },
+  // stripe → webhook (event)
+  { from:'ext-stripe',  to:'webhook',      type:'event',  label:'webhook event' },
+];
+
+const FIXES = [
+  {
+    id:'fix-auth-stuck', nodes:['authmodal', 'results'], severity:'critical',
+    label:'Auth stuck "Logging in…"',
+    detail:'@supabase/ssr can throw after a network-200 during cookie write. The original handleSubmit had no try/catch — the throw left setLoading(true) unreachable. Since AuthModal uses if (!isOpen) return null (not unmount), state persisted across opens. Fix: wrapped both signup and login branches in try/catch/finally; setLoading(false) now fires on every code path.',
+  },
+  {
+    id:'fix-signed-in-gate', nodes:['results'], severity:'high',
+    label:'Signed-in free users routed to AuthModal',
+    detail:"handleTabClick always opened AuthModal regardless of session. Signed-in free-tier users never received a new SIGNED_IN event, so they stayed stuck at AuthModal (which just signed them in again). Fix: added session state populated from applyGate(); handleTabClick now routes to UpgradeModal if session exists, AuthModal if not.",
+  },
+  {
+    id:'fix-upgrade-autofire', nodes:['results'], severity:'medium',
+    label:'UpgradeModal auto-opening on every login',
+    detail:"handleSession was calling setUpgradeOpen(true) on every SIGNED_IN event, including normal logins. Fix: removed setUpgradeOpen(true) from handleSession entirely. UpgradeModal now opens only on: (a) direct tab-click gate for signed-in free users, or (b) onSignupSuccess callback after a new account is created.",
+  },
+  {
+    id:'fix-stripe-race', nodes:['results', 'webhook'], severity:'high',
+    label:'Stripe webhook race condition',
+    detail:'Stripe redirects to /results?success=true before checkout.session.completed fires and the webhook updates profiles.tier. On a fresh read, the user appeared as free-tier and got locked out. Fix: setInterval polling (1 s × 15 attempts) starting immediately on ?success=true. Shows a non-blocking "payment processing" banner. Clears automatically on success; banner stays if the 15-attempt limit is hit (tells user to refresh).',
+  },
+];
+
+const KNOWN_BUGS = [
+  {
+    id:'bug-session-null', nodes:['results'], severity:'low',
+    label:'Brief session-null window on load',
+    detail:'session state starts null and is populated asynchronously by applyGate(). A fast tab-click before applyGate() resolves routes to AuthModal instead of UpgradeModal for already-signed-in free-tier users. Full fix requires a loading guard (isSessionLoading state). Accepted as low-priority — the window is brief (< 200ms in practice).',
+  },
+  {
+    id:'bug-dead-exports', nodes:['scoring'], severity:'info',
+    label:'Over-exported: scoreNeighborhood, detectGaps',
+    detail:"scoring.js exports scoreNeighborhood and detectGaps, but no file outside scoring.js imports them — only getTopMatches is imported by find/page.tsx. These functions are used internally within getTopMatches, so they're not dead code, but their exports are unused. Could be tightened.",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────
+
+let pan = { x: 60, y: 30 };
+let scale = 0.68;
+let selectedId = null;
+let activeTypes = new Set(['page','component','data','api','lib','external']);
+let isDragging = false;
+let dragStart = null;
+let panStart = null;
+
+const NW = 90; // node half-width
+const NH = 27; // node half-height
+const CANVAS_W = 1700;
+const CANVAS_H = 1240;
+
+// ─────────────────────────────────────────────────────────────────
+// GEOMETRY HELPERS
+// ─────────────────────────────────────────────────────────────────
+
+function nodeById(id) { return NODES.find(n => n.id === id); }
+
+function edgePoints(fromNode, toNode) {
+  const dx = toNode.x - fromNode.x;
+  const dy = toNode.y - fromNode.y;
+  let sx, sy, tx, ty;
+  if (Math.abs(dx) >= Math.abs(dy) * 0.75) {
+    if (dx > 0) { sx = fromNode.x + NW; sy = fromNode.y; tx = toNode.x - NW; ty = toNode.y; }
+    else         { sx = fromNode.x - NW; sy = fromNode.y; tx = toNode.x + NW; ty = toNode.y; }
+  } else {
+    if (dy > 0) { sx = fromNode.x; sy = fromNode.y + NH; tx = toNode.x; ty = toNode.y - NH; }
+    else         { sx = fromNode.x; sy = fromNode.y - NH; tx = toNode.x; ty = toNode.y + NH; }
+  }
+  return { sx, sy, tx, ty };
+}
+
+function bezier(sx, sy, tx, ty) {
+  const dx = Math.abs(tx - sx), dy = Math.abs(ty - sy);
+  if (dx >= dy * 0.75) {
+    const off = dx * 0.42;
+    const cx1 = sx + (tx > sx ? off : -off), cx2 = tx - (tx > sx ? off : -off);
+    return `M ${sx} ${sy} C ${cx1} ${sy}, ${cx2} ${ty}, ${tx} ${ty}`;
+  } else {
+    const off = dy * 0.42;
+    const cy1 = sy + (ty > sy ? off : -off), cy2 = ty - (ty > sy ? off : -off);
+    return `M ${sx} ${sy} C ${sx} ${cy1}, ${tx} ${cy2}, ${tx} ${ty}`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SVG BUILDER
+// ─────────────────────────────────────────────────────────────────
+
+function svgEl(tag, attrs, children) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  if (children) children.forEach(c => el.appendChild(c));
+  return el;
+}
+
+function svgText(tag, attrs, text) {
+  const el = svgEl(tag, attrs);
+  el.textContent = text;
+  return el;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────────────
+
+function render() {
+  const svg = document.getElementById('mainSvg');
+  svg.innerHTML = '';
+
+  // defs
+  const defs = svgEl('defs', {});
+  ['import','render','call','data','event'].forEach(type => {
+    const s = EDGE_STYLE[type];
+    const m = svgEl('marker', {
+      id: `arr-${type}`,
+      markerWidth: '9', markerHeight: '6',
+      refX: '8', refY: '3',
+      orient: 'auto', markerUnits: 'userSpaceOnUse',
+    });
+    const p = svgEl('path', { d: 'M 0 0 L 9 3 L 0 6 z', fill: s.stroke });
+    m.appendChild(p);
+    defs.appendChild(m);
+  });
+  svg.appendChild(defs);
+
+  // zoom group
+  const g = svgEl('g', { id: 'zoomGroup', transform: `translate(${pan.x},${pan.y}) scale(${scale})` });
+  svg.appendChild(g);
+
+  // cluster backgrounds
+  CLUSTERS.forEach(cl => {
+    const rect = svgEl('rect', {
+      x: cl.x, y: cl.y, width: cl.w, height: cl.h,
+      rx: 14, ry: 14,
+      fill: cl.color + '08',
+      stroke: cl.color + '22',
+      'stroke-width': 1,
+    });
+    g.appendChild(rect);
+
+    const lbl = svgText('text', {
+      x: cl.x + 12, y: cl.y + 18,
+      'font-size': '10',
+      'font-weight': '700',
+      'letter-spacing': '.08em',
+      fill: cl.color,
+      opacity: '0.65',
+    }, cl.label.toUpperCase());
+    g.appendChild(lbl);
+  });
+
+  // determine connected node ids for selected
+  const connectedIds = new Set();
+  if (selectedId) {
+    EDGES.forEach(e => {
+      if (e.from === selectedId) connectedIds.add(e.to);
+      if (e.to === selectedId) connectedIds.add(e.from);
+    });
+  }
+
+  // edges
+  EDGES.forEach((e, idx) => {
+    const fn = nodeById(e.from), tn = nodeById(e.to);
+    if (!fn || !tn) return;
+    const { sx, sy, tx, ty } = edgePoints(fn, tn);
+    const d = bezier(sx, sy, tx, ty);
+    const s = EDGE_STYLE[e.type];
+
+    let opacity = s.opacity;
+    if (selectedId) {
+      const isConn = (e.from === selectedId || e.to === selectedId);
+      opacity = isConn ? 1 : 0.06;
+    }
+
+    const attrs = {
+      d,
+      fill: 'none',
+      stroke: s.stroke,
+      'stroke-width': s.width,
+      'stroke-opacity': opacity,
+      'marker-end': `url(#arr-${e.type})`,
+    };
+    if (s.dash) attrs['stroke-dasharray'] = s.dash;
+
+    const path = svgEl('path', attrs);
+    path.setAttribute('data-edge', idx);
+    g.appendChild(path);
+  });
+
+  // nodes
+  NODES.forEach(n => {
+    const isActive = activeTypes.has(n.type);
+    const isSelected = n.id === selectedId;
+
+    let nodeOpacity = 1;
+    if (!isActive) nodeOpacity = 0.12;
+    else if (selectedId && n.id !== selectedId && !connectedIds.has(n.id)) nodeOpacity = 0.25;
+
+    const color = TYPE_COLOR[n.type];
+    const nodeG = svgEl('g', {
+      transform: `translate(${n.x},${n.y})`,
+      cursor: 'pointer',
+      opacity: nodeOpacity,
+    });
+
+    // background rect
+    const rect = svgEl('rect', {
+      x: -NW, y: -NH,
+      width: NW * 2, height: NH * 2,
+      rx: 10, ry: 10,
+      fill: isSelected ? '#202638' : '#1a1d2b',
+      stroke: color,
+      'stroke-width': isSelected ? 2.5 : 1.5,
+    });
+    nodeG.appendChild(rect);
+
+    // fix/bug badge dots
+    const hasFix = n.fixes.length > 0;
+    const hasBug = n.bugs.length > 0;
+    if (hasFix || hasBug) {
+      let bx = NW - 8;
+      if (hasFix) {
+        const sev = FIXES.find(f => n.fixes.includes(f.id))?.severity || 'medium';
+        const sevColor = { critical:'#ef4444', high:'#f97316', medium:'#eab308', info:'#3b82f6', low:'#6b7280' }[sev];
+        const badge = svgEl('circle', { cx: bx, cy: -NH + 7, r: 5, fill: sevColor });
+        nodeG.appendChild(badge);
+        bx -= 13;
+      }
+      if (hasBug) {
+        const badge = svgEl('circle', { cx: bx, cy: -NH + 7, r: 5, fill: '#6b7280' });
+        nodeG.appendChild(badge);
+      }
+    }
+
+    // label text
+    const labelEl = svgText('text', {
+      x: 0, y: hasFix || hasBug ? -5 : -2,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'middle',
+      'font-size': '11.5',
+      'font-weight': '600',
+      fill: '#dde3f0',
+    }, n.label);
+    nodeG.appendChild(labelEl);
+
+    // type tag
+    const typeEl = svgText('text', {
+      x: 0, y: hasFix || hasBug ? 11 : 13,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'middle',
+      'font-size': '9',
+      'font-weight': '700',
+      fill: color,
+      opacity: '0.75',
+      'letter-spacing': '.06em',
+    }, n.type.toUpperCase());
+    nodeG.appendChild(typeEl);
+
+    // invisible hit area
+    const hit = svgEl('rect', {
+      x: -NW, y: -NH, width: NW*2, height: NH*2, fill: 'transparent',
+    });
+    nodeG.appendChild(hit);
+
+    nodeG.addEventListener('click', () => selectNode(n.id));
+    nodeG.addEventListener('mouseenter', (ev) => showTooltip(n.label, ev));
+    nodeG.addEventListener('mouseleave', hideTooltip);
+    g.appendChild(nodeG);
+  });
+
+  updateZoomLabel();
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SELECT + SIDEBAR
+// ─────────────────────────────────────────────────────────────────
+
+function selectNode(id) {
+  selectedId = selectedId === id ? null : id;
+  render();
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const el = document.getElementById('sidebarInner');
+  const sb = document.getElementById('sidebar');
+
+  if (!selectedId) {
+    sb.classList.add('collapsed');
+    el.innerHTML = '<div class="sb-empty"><div class="sb-empty-icon">◈</div>Click any node to inspect it — file path, imports, exports, connected nodes, and any known fixes or bugs.</div>';
+    return;
+  }
+
+  sb.classList.remove('collapsed');
+  const n = nodeById(selectedId);
+  if (!n) return;
+
+  const color = TYPE_COLOR[n.type];
+  const relatedFixes = FIXES.filter(f => n.fixes.includes(f.id));
+  const relatedBugs  = KNOWN_BUGS.filter(b => n.bugs.includes(b.id));
+
+  // connected nodes
+  const outEdges = EDGES.filter(e => e.from === n.id);
+  const inEdges  = EDGES.filter(e => e.to === n.id);
+
+  const sevLabel = { critical:'CRITICAL', high:'HIGH', medium:'MEDIUM', info:'INFO', low:'LOW' };
+  const sevBg    = { critical:'rgba(239,68,68,.15)', high:'rgba(249,115,22,.15)', medium:'rgba(234,179,8,.15)', info:'rgba(59,130,246,.15)', low:'rgba(107,114,128,.15)' };
+  const sevFg    = { critical:'#ef4444', high:'#f97316', medium:'#eab308', info:'#3b82f6', low:'#6b7280' };
+  const edgeColor = { import:'#475569', render:'#6366f1', call:'#f59e0b', data:'#10b981', event:'#f97316' };
+
+  let html = `
+    <div class="sb-pill" style="background:${color}22;color:${color}">${n.type.toUpperCase()}</div>
+    <div class="sb-title">${n.label}</div>
+    <div class="sb-desc">${n.desc}</div>`;
+
+  if (n.file) {
+    html += `<div class="sb-section">File</div><div class="sb-mono">${n.label}</div>`;
+  }
+
+  if (n.exports.length > 0) {
+    html += `<div class="sb-section">Exports</div><div class="sb-tags">${n.exports.map(e => `<span class="sb-tag">${e}</span>`).join('')}</div>`;
+  }
+
+  if (n.imports.length > 0) {
+    html += `<div class="sb-section">Imports</div><div class="sb-tags">${n.imports.map(e => `<span class="sb-tag">${e}</span>`).join('')}</div>`;
+  }
+
+  if (outEdges.length > 0) {
+    html += `<div class="sb-section">Calls / Renders / Imports ↓</div><div class="sb-conns">`;
+    outEdges.forEach(e => {
+      const tn = nodeById(e.to);
+      if (!tn) return;
+      const tc = TYPE_COLOR[tn.type];
+      html += `<div class="sb-conn" onclick="selectNode('${tn.id}')">
+        <div class="sb-conn-dot" style="background:${tc}"></div>
+        <span class="sb-conn-name">${tn.label}</span>
+        <span class="sb-conn-via" style="color:${edgeColor[e.type]}">${e.label}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (inEdges.length > 0) {
+    html += `<div class="sb-section">Used by ↑</div><div class="sb-conns">`;
+    inEdges.forEach(e => {
+      const fn = nodeById(e.from);
+      if (!fn) return;
+      const fc = TYPE_COLOR[fn.type];
+      html += `<div class="sb-conn" onclick="selectNode('${fn.id}')">
+        <div class="sb-conn-dot" style="background:${fc}"></div>
+        <span class="sb-conn-name">${fn.label}</span>
+        <span class="sb-conn-via" style="color:${edgeColor[e.type]}">${e.label}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (relatedFixes.length > 0) {
+    html += `<div class="sb-divider"></div><div class="sb-section">Fixes applied</div>`;
+    relatedFixes.forEach(f => {
+      html += `<div class="sb-fix" style="border-color:${sevFg[f.severity]}">
+        <div class="sb-fix-label">${f.label}
+          <span class="sb-severity" style="background:${sevBg[f.severity]};color:${sevFg[f.severity]}">${sevLabel[f.severity]}</span>
+        </div>
+        <div class="sb-fix-detail">${f.detail}</div>
+      </div>`;
+    });
+  }
+
+  if (relatedBugs.length > 0) {
+    html += `<div class="sb-divider"></div><div class="sb-section">Known issues</div>`;
+    relatedBugs.forEach(b => {
+      html += `<div class="sb-fix" style="border-color:${sevFg[b.severity]}">
+        <div class="sb-fix-label">${b.label}
+          <span class="sb-severity" style="background:${sevBg[b.severity]};color:${sevFg[b.severity]}">${sevLabel[b.severity]}</span>
+        </div>
+        <div class="sb-fix-detail">${b.detail}</div>
+      </div>`;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// FILTER CHIPS
+// ─────────────────────────────────────────────────────────────────
+
+function renderFilters() {
+  const container = document.getElementById('filters');
+  const types = [
+    { id:'page',      label:'Pages',      color: TYPE_COLOR.page },
+    { id:'component', label:'Components', color: TYPE_COLOR.component },
+    { id:'data',      label:'Data / Logic', color: TYPE_COLOR.data },
+    { id:'api',       label:'API Routes', color: TYPE_COLOR.api },
+    { id:'lib',       label:'Lib / Utils', color: TYPE_COLOR.lib },
+    { id:'external',  label:'External',   color: TYPE_COLOR.external },
+  ];
+  container.innerHTML = '';
+  types.forEach(t => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (activeTypes.has(t.id) ? '' : ' off');
+    chip.style.color = t.color;
+    chip.style.borderColor = t.color + '55';
+    chip.style.background = activeTypes.has(t.id) ? t.color + '18' : 'transparent';
+    chip.textContent = t.label;
+    chip.onclick = () => {
+      if (activeTypes.has(t.id)) activeTypes.delete(t.id);
+      else activeTypes.add(t.id);
+      renderFilters();
+      render();
+    };
+    container.appendChild(chip);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// PAN / ZOOM
+// ─────────────────────────────────────────────────────────────────
+
+function applyTransform() {
+  const g = document.getElementById('zoomGroup');
+  if (g) g.setAttribute('transform', `translate(${pan.x},${pan.y}) scale(${scale})`);
+  updateZoomLabel();
+}
+
+function updateZoomLabel() {
+  document.getElementById('zoomPct').textContent = Math.round(scale * 100) + '%';
+}
+
+function zoomAt(cx, cy, factor) {
+  const newScale = Math.min(2.5, Math.max(0.2, scale * factor));
+  pan.x = cx - ((cx - pan.x) / scale) * newScale;
+  pan.y = cy - ((cy - pan.y) / scale) * newScale;
+  scale = newScale;
+  applyTransform();
+}
+
+function fitView() {
+  const wrap = document.getElementById('canvasWrap');
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  const padding = 40;
+  const scaleX = (w - padding * 2) / CANVAS_W;
+  const scaleY = (h - padding * 2) / CANVAS_H;
+  scale = Math.min(scaleX, scaleY, 1);
+  pan.x = (w - CANVAS_W * scale) / 2;
+  pan.y = (h - CANVAS_H * scale) / 2;
+  applyTransform();
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TOOLTIP
+// ─────────────────────────────────────────────────────────────────
+
+function showTooltip(text, ev) {
+  const t = document.getElementById('tooltip');
+  t.textContent = text;
+  t.style.display = 'block';
+  t.style.left = ev.clientX + 12 + 'px';
+  t.style.top  = ev.clientY - 28 + 'px';
+}
+function hideTooltip() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// EVENTS
+// ─────────────────────────────────────────────────────────────────
+
+const svg = document.getElementById('mainSvg');
+const wrap = document.getElementById('canvasWrap');
+
+// Wheel zoom
+wrap.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const rect = wrap.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.1 : 0.91;
+  zoomAt(cx, cy, factor);
+}, { passive: false });
+
+// Drag pan
+wrap.addEventListener('mousedown', (e) => {
+  if (e.target.closest('.node') || e.target.closest('g[cursor="pointer"]')) return;
+  isDragging = true;
+  dragStart = { x: e.clientX, y: e.clientY };
+  panStart  = { x: pan.x, y: pan.y };
+  wrap.classList.add('dragging');
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  pan.x = panStart.x + (e.clientX - dragStart.x);
+  pan.y = panStart.y + (e.clientY - dragStart.y);
+  applyTransform();
+});
+
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+  wrap.classList.remove('dragging');
+});
+
+// Click outside deselects
+svg.addEventListener('click', (e) => {
+  if (e.target === svg || e.target.closest('#zoomGroup') === null) return;
+  // If click hit a cluster bg or edge path (not a node group), deselect
+  if (e.target.tagName === 'rect' && e.target.closest('g[cursor="pointer"]') === null && e.target.parentElement === document.getElementById('zoomGroup')) {
+    selectedId = null; render(); renderSidebar();
+  }
+});
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { selectedId = null; render(); renderSidebar(); }
+});
+
+// Zoom buttons
+document.getElementById('zoomIn').addEventListener('click', () => {
+  const rect = wrap.getBoundingClientRect();
+  zoomAt(rect.width / 2, rect.height / 2, 1.2);
+});
+document.getElementById('zoomOut').addEventListener('click', () => {
+  const rect = wrap.getBoundingClientRect();
+  zoomAt(rect.width / 2, rect.height / 2, 0.83);
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  selectedId = null;
+  fitView();
+  render();
+  renderSidebar();
+});
+
+// ─────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────
+
+renderFilters();
+// Initial fit after layout settles
+requestAnimationFrame(() => {
+  fitView();
+  render();
+  renderSidebar();
+});
+</script>
+</body>
+</html>
