@@ -219,7 +219,7 @@ body {
   text-transform: uppercase; background: var(--amber-bg); color: var(--amber);
   border-radius: 100px; padding: 4px 12px; margin-bottom: 14px;
 }
-.pricing-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 20px; }
+.pricing-options { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 18px 0 20px; }
 .price-card {
   border: 1.5px solid var(--blue-pale); border-radius: 14px; padding: 18px 12px;
   cursor: pointer; transition: all .2s; text-align: center;

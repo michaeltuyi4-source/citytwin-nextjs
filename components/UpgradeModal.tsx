@@ -9,7 +9,6 @@ interface UpgradeModalProps {
 }
 
 export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
-  const [selectedPlan, setSelectedPlan] = useState<'one-time' | 'monthly'>('one-time');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,13 +28,11 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
         return;
       }
 
-      const plan = selectedPlan === 'one-time' ? 'lifetime' : 'monthly';
-
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          plan,
+          plan: 'lifetime',
           userId: session.user.id,
           email: session.user.email,
         }),
@@ -67,21 +64,9 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
         </p>
 
         <div className="pricing-options">
-          <div
-            className={`price-card${selectedPlan === 'one-time' ? ' selected' : ''}`}
-            onClick={() => setSelectedPlan('one-time')}
-          >
+          <div className="price-card selected">
             <div className="price-amount">$9</div>
             <div className="price-label">one-time</div>
-          </div>
-          <div
-            className={`price-card${selectedPlan === 'monthly' ? ' selected' : ''}`}
-            onClick={() => setSelectedPlan('monthly')}
-          >
-            <div className="price-amount">
-              $5<span style={{ fontSize: '.85rem', fontFamily: 'var(--font-body)' }}>/mo</span>
-            </div>
-            <div className="price-label">monthly</div>
           </div>
         </div>
 
@@ -97,7 +82,7 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
           disabled={loading}
           style={{ opacity: loading ? 0.7 : 1 }}
         >
-          {loading ? 'Redirecting...' : selectedPlan === 'one-time' ? 'Unlock for $9' : 'Unlock for $5/mo'}
+          {loading ? 'Redirecting...' : 'Unlock for $9'}
         </button>
         <button className="upgrade-later" onClick={onClose}>Maybe later</button>
       </div>

@@ -3,12 +3,14 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import CTLogo from '@/components/CTLogo';
 import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
+import ShareModal from '@/components/ShareModal';
 import { createClient } from '@/lib/supabase';
 import { getCityPhoto, getNeighborhoodPhoto, getCityLabel } from '@/lib/photos';
 import type { MatchResult, PhraseChip, Gap } from '@/lib/types';
@@ -83,6 +85,9 @@ export default function ResultsPage() {
   const [unlocked, setUnlocked]             = useState(false);
   const [session, setSession]               = useState<{ user: { id: string } } | null>(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [shareOpen, setShareOpen]                 = useState(false);
+  const [pollTimedOut, setPollTimedOut]           = useState(false);
+  const [hydrated, setHydrated]                   = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -126,11 +131,15 @@ export default function ResultsPage() {
           sessionStorage.removeItem('citytwin_results');
           localStorage.removeItem('citytwin_results');
           router.push('/find');
+          return;
         }
       } catch {
         router.push('/find');
+        return;
       }
     }
+
+    setHydrated(true);
 
     // If returning from Stripe success, poll tier until webhook updates it
     const params = new URLSearchParams(window.location.search);
@@ -162,10 +171,12 @@ export default function ResultsPage() {
                 setPaymentProcessing(false);
                 clearInterval(pollRef.current!);
                 pollRef.current = null;
+                toast.success('Your matches are unlocked!', { description: 'Welcome to CityTwin — all three neighborhoods are now yours.' });
               } else if (attempts >= 15) {
                 clearInterval(pollRef.current!);
                 pollRef.current = null;
-                // paymentProcessing stays true — message remains visible
+                setPaymentProcessing(false);
+                setPollTimedOut(true);
               }
             }, 1000);
           });
@@ -248,13 +259,16 @@ export default function ResultsPage() {
   }
 
   function handleShare() {
-    alert('Share is coming soon!');
+    setShareOpen(true);
   }
 
   // Silence unused-variable warning; priorities is preserved for Phase 2b use
   void priorities;
 
-  // Empty state
+  // Not yet hydrated from storage — render nothing to avoid flash
+  if (!hydrated) return null;
+
+  // Empty state (only shown after hydration confirms no results)
   if (results.length === 0) {
     return (
       <>
@@ -355,10 +369,28 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {paymentProcessing && (
+      {(paymentProcessing || pollTimedOut) && !unlocked && (
         <div style={{ maxWidth: 720, margin: '12px auto 0', padding: '0 20px' }}>
-          <div style={{ background: 'rgba(196,123,43,0.08)', border: '1px solid rgba(196,123,43,0.25)', borderRadius: 12, padding: '12px 16px', fontSize: 13, color: 'var(--navy)', lineHeight: 1.5 }}>
-            Your payment is processing. If your matches don&apos;t unlock in a moment, refresh the page.
+          <div style={{ background: 'rgba(196,123,43,0.08)', border: '1px solid rgba(196,123,43,0.25)', borderRadius: 12, padding: '14px 18px', fontSize: 13, color: 'var(--navy)', lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: 12 }}>
+            {paymentProcessing && (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ flexShrink: 0, animation: 'rp-spin 0.9s linear infinite' }}>
+                <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".25" />
+                <path d="M21 12a9 9 0 00-9-9" />
+              </svg>
+            )}
+            <span style={{ flex: 1 }}>
+              {paymentProcessing
+                ? 'Unlocking your matches\u2026 this takes just a moment.'
+                : 'Taking longer than expected.'}
+            </span>
+            {pollTimedOut && (
+              <button
+                onClick={() => window.location.reload()}
+                style={{ flexShrink: 0, background: 'var(--amber)', color: 'white', border: 0, borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Refresh
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -545,6 +577,13 @@ export default function ResultsPage() {
         onSignupSuccess={() => setUpgradeOpen(true)}
       />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      <ShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        neighborhoodName={activeMatch?.name ?? ''}
+        cityLabel={cityLabel}
+        matchPercent={activeMatch?.matchPercent ?? 0}
+      />
 
       <style jsx>{`
         .rp-root {
@@ -748,6 +787,9 @@ export default function ResultsPage() {
         @keyframes rpFadeIn {
           from { opacity: 0; }
           to   { opacity: 1; }
+        }
+        @keyframes rp-spin {
+          to { transform: rotate(360deg); }
         }
 
         .rp-card-photo {
