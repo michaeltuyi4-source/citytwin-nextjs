@@ -227,7 +227,7 @@ export default function AboutPage() {
         <div className="ft-bottom">
           <div className="ft-copy">© {year} CityTwin LLC. All rights reserved.</div>
           <div className="ft-legal">
-            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="/privacy">Privacy Policy</a>
             <a href="/terms">Terms of Use</a>
           </div>
         </div>

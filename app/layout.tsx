@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { DM_Serif_Display, DM_Sans } from 'next/font/google';
+import { Toaster } from 'sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './globals.css';
 
@@ -53,6 +54,7 @@ export default function RootLayout({
         style={{ fontFamily: 'var(--font-body)' }}
       >
         {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

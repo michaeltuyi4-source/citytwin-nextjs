@@ -11,6 +11,7 @@ out/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.local.example
 
 # Package manager lock files (keep one, ignore others)
 package-lock.json
@@ -33,6 +34,8 @@ Thumbs.db
 # Orientation docs (local collaborator reference, not for VCS)
 CITYTWIN-ORIENTATION.md
 CITYTWIN-ORIENTATION-V2.md
+citytwin_bug_priority.md
+citytwin_product_definition (1).md
 
 # TypeScript
 *.tsbuildinfo
