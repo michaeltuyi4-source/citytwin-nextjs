@@ -722,26 +722,27 @@ body {
   gap: 12px;
   margin-bottom: 24px;
 }
-@media (min-width: 600px) {
+/* Tablet (768-1023px): 2 columns, the only orphan-free split for 10 cards. */
+@media (min-width: 768px) {
   .category-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 16px;
   }
 }
+/* Desktop (>=1024px): 5 columns x 2 rows, no orphan. */
 @media (min-width: 1024px) {
   .category-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 16px;
-    max-width: 960px;
-    margin-left: auto;
-    margin-right: auto;
   }
 }
 .category-card {
   position: relative;
-  padding: 20px;
+  padding: 15px 16px;
+  min-height: 44px;
   background: white;
   border: 1.5px solid var(--blue-pale);
-  border-radius: 16px;
+  border-radius: 14px;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   overflow: hidden;
@@ -756,10 +757,10 @@ body {
 }
 .cat-check {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 24px;
-  height: 24px;
+  top: 12px;
+  right: 12px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--blue-pale);
   display: flex;
@@ -779,18 +780,20 @@ body {
 }
 .cat-icon {
   display: inline-flex;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 .cat-label {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--navy);
-  margin-bottom: 4px;
+  line-height: 1.2;
+  margin-bottom: 2px;
+  padding-right: 26px;
 }
 .cat-desc {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--slate-600);
-  line-height: 1.4;
+  line-height: 1.3;
 }
 /* Priority rows */
 .priority-list {
