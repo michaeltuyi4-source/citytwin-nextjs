@@ -538,26 +538,20 @@ export default function ResultsPage() {
 
       <footer className="rp-footer">
         <div className="rp-footer-inner">
-          <div className="rp-footer-about">
-            <CTLogo size={28} />
-            <span className="rp-footer-tag">
-              Land where your life already fits.
-            </span>
-          </div>
           <div className="rp-footer-social">
-            <a href="https://x.com/citytwin" aria-label="Follow CityTwin on X" className="rp-social-btn">
+            <a href="https://x.com/CityTwinApp" target="_blank" rel="noopener noreferrer" aria-label="Follow CityTwin on X" className="rp-social-btn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
             </a>
-            <a href="https://instagram.com/citytwin" aria-label="Follow CityTwin on Instagram" className="rp-social-btn">
+            <a href="https://instagram.com/citytwinapp" target="_blank" rel="noopener noreferrer" aria-label="Follow CityTwin on Instagram" className="rp-social-btn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="5" />
                 <path d="M16 11.4A4 4 0 1112.6 8 4 4 0 0116 11.4z" />
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
               </svg>
             </a>
-            <a href="https://facebook.com/citytwin" aria-label="Follow CityTwin on Facebook" className="rp-social-btn">
+            <a href="https://facebook.com/CityTwin" target="_blank" rel="noopener noreferrer" aria-label="Follow CityTwin on Facebook" className="rp-social-btn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.7c0-.9.3-1.5 1.6-1.5H17V4.3c-.3 0-1.3-.1-2.5-.1-2.4 0-4 1.5-4 4.1v2.5H7.8V14h2.7v8h3z" />
               </svg>
@@ -1134,23 +1128,11 @@ export default function ResultsPage() {
         }
         .rp-footer-inner {
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
           gap: 16px;
           margin-bottom: 12px;
           flex-wrap: wrap;
-        }
-        .rp-footer-about {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex: 1;
-          min-width: 200px;
-        }
-.rp-footer-tag {
-          font-size: 12px;
-          color: var(--slate-500);
-          line-height: 1.4;
         }
         .rp-footer-social {
           display: flex;
