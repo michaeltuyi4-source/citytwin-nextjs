@@ -729,11 +729,19 @@ body {
     gap: 16px;
   }
 }
-/* Desktop (>=1024px): 5 columns x 2 rows, no orphan. */
+/* Desktop (>=1024px): 5 columns x 2 rows, no orphan.
+   Break the grid out of the shared 720px .find-page cap (centered on the
+   viewport) so cards are wide enough for one-line titles. Scoped to the grid
+   only, so step 2's heading/intro and steps 1 and 3 stay at 720px.
+   .find-body has overflow-x: hidden, so the breakout cannot cause h-scroll. */
 @media (min-width: 1024px) {
   .category-grid {
     grid-template-columns: repeat(5, 1fr);
     gap: 16px;
+    width: calc(100vw - 48px);
+    max-width: 1180px;
+    margin-left: 50%;
+    transform: translateX(-50%);
   }
 }
 .category-card {
