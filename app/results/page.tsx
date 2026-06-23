@@ -551,7 +551,7 @@ export default function ResultsPage() {
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
               </svg>
             </a>
-            <a href="https://facebook.com/CityTwin" target="_blank" rel="noopener noreferrer" aria-label="Follow CityTwin on Facebook" className="rp-social-btn">
+            <a href="https://facebook.com/Citytwinapp" target="_blank" rel="noopener noreferrer" aria-label="Follow CityTwin on Facebook" className="rp-social-btn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.7c0-.9.3-1.5 1.6-1.5H17V4.3c-.3 0-1.3-.1-2.5-.1-2.4 0-4 1.5-4 4.1v2.5H7.8V14h2.7v8h3z" />
               </svg>
