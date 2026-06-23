@@ -213,7 +213,8 @@ export default function HomePage() {
             fill
             priority
             sizes="100vw"
-            style={{ objectFit: 'cover' }}
+            quality={80}
+            style={{ objectFit: 'cover', objectPosition: 'center 40%' }}
           />
         </div>
 
