@@ -413,7 +413,7 @@ export default function PlacesPage() {
   });
 
   return (
-    <div style={{ fontFamily: 'var(--font-body)', background: 'linear-gradient(180deg, #ECF1F8 0%, #F5F1E9 55%, #FBF6EE 100%)', color: 'var(--navy)', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ fontFamily: 'var(--font-body)', background: 'linear-gradient(180deg, #ECF1F8 0%, #F5F1E9 55%, #FBF6EE 100%)', color: 'var(--navy)', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100vw', height: '100vh', overflow: 'hidden', overflowX: 'hidden', WebkitFontSmoothing: 'antialiased' }}>
 
       {/* ── NAV ── */}
       <nav className="places-nav">
@@ -526,7 +526,7 @@ export default function PlacesPage() {
                 placeholder="Search address to measure distance…"
                 value={addressQuery}
                 onChange={(e) => handleAddressSearch(e.target.value)}
-                style={{ width: '100%', padding: '7px 32px 7px 10px', border: '1.5px solid var(--blue-pale)', borderRadius: 10, fontFamily: 'var(--font-body)', fontSize: '.76rem', color: 'var(--navy)', background: 'var(--bg)', outline: 'none' }}
+                style={{ width: '100%', padding: '9px 34px 9px 12px', border: '1.5px solid var(--blue-pale)', borderRadius: 10, fontFamily: 'var(--font-body)', fontSize: '16px', color: 'var(--navy)', background: 'var(--bg)', outline: 'none' }}
                 onFocus={(e) => { e.target.style.borderColor = 'var(--navy-mid)'; }}
                 onBlur={(e)  => { e.target.style.borderColor = 'var(--blue-pale)'; }}
               />
