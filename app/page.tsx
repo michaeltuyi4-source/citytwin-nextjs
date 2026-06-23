@@ -1,18 +1,36 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import CTLogo from '@/components/CTLogo';
+import AuthModal from '@/components/AuthModal';
 
 export default function HomePage() {
   const [menuOpen, setMenuOpen]     = useState(false);
   const [demoOpen, setDemoOpen]     = useState(false);
   const [demoSuccess, setDemoSuccess] = useState('');
   const [demoEmail, setDemoEmail]   = useState('');
+  const [authOpen, setAuthOpen]     = useState(false);
+  const [heroVisible, setHeroVisible] = useState(true);
   const [year, setYear]             = useState('');
+  const heroRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     setYear(String(new Date().getFullYear()));
+  }, []);
+
+  // Scroll-triggered nav CTA: hide it while the hero is on screen,
+  // fade it in once the user scrolls past the hero.
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   function handleDemoSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -51,7 +69,19 @@ export default function HomePage() {
         </div>
 
         <div className="nav-actions">
-          <Link href="/find" className="nav-cta">Start matching →</Link>
+          <button
+            type="button"
+            className="nav-signin"
+            onClick={() => setAuthOpen(true)}
+          >
+            Sign in
+          </button>
+          <Link
+            href="/find"
+            className={`nav-cta${heroVisible ? ' nav-cta-hidden' : ''}`}
+          >
+            Start matching →
+          </Link>
         </div>
 
         <button
@@ -67,13 +97,42 @@ export default function HomePage() {
       {/* ── MOBILE MENU ── */}
       <div className={`mobile-menu${menuOpen ? ' open' : ''}`} aria-hidden={!menuOpen}>
         <Link href="/find" className="mm-primary" onClick={() => setMenuOpen(false)}>
-          Start Matching →
+          Start matching →
         </Link>
+
+        <nav className="mm-links">
+          <a className="mm-link" href="#how-it-works" onClick={() => setMenuOpen(false)}>
+            How it works
+            <svg className="mm-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </a>
+          <a className="mm-link" href="#sample-match" onClick={() => setMenuOpen(false)}>
+            See a match
+            <svg className="mm-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </a>
+          <a className="mm-link" href="mailto:hello@citytwinapp.com" onClick={() => setMenuOpen(false)}>
+            For businesses
+            <svg className="mm-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </a>
+        </nav>
+
+        <div className="mm-divider" />
+
         <button
-          className="mm-ghost"
-          onClick={() => { setMenuOpen(false); setDemoOpen(true); document.body.style.overflow = 'hidden'; }}
+          type="button"
+          className="mm-signin"
+          onClick={() => { setMenuOpen(false); setAuthOpen(true); }}
         >
-          Request a Demo
+          <svg className="mm-user" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          Sign in
         </button>
       </div>
 
@@ -137,31 +196,44 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* ── AUTH MODAL ── */}
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        heading="Welcome back"
+        sub="Sign in to pick up where you left off."
+      />
+
       {/* ── HERO ── */}
-      <section className="hero" id="hero">
-        <div className="hero-left">
-          <div className="hero-pill">
-            <span className="pill-dot" />
-            Neighborhood matching - now live
-          </div>
-
-          <h1 className="hero-h1">
-            Moving to a new city shouldn&apos;t mean <em>starting over.</em>
-          </h1>
-
-          <p className="hero-sub">Find the neighborhood where your life already exists.</p>
-
-          <div className="hero-actions">
-            <Link href="/find" className="btn-primary">Start matching →</Link>
-            <a href="#how-it-works" className="btn-ghost">See how it works</a>
-          </div>
+      <section className="hero" id="hero" ref={heroRef}>
+        <div className="hero-banner">
+          <Image
+            src="/images/hero-farmers-market.jpg"
+            alt="Neighbors gathering at a local farmers market"
+            fill
+            priority
+            sizes="100vw"
+            style={{ objectFit: 'cover' }}
+          />
         </div>
 
-        <div className="hero-right">
-          <div
-            className="hero-image"
-            style={{ backgroundImage: "url('/images/hero_three_coffees.jpg')" }}
-          />
+        <div className="hero-content">
+          <div className="hero-pill">
+            <span className="pill-dot" />
+            Neighborhood matching, now live
+          </div>
+
+          <h1 className="hero-h1">Moving doesn&apos;t mean starting over.</h1>
+
+          <p className="hero-sub">CityTwin matches you to neighborhoods that fit how you actually live.</p>
+
+          <div className="hero-actions">
+            <Link href="/find" className="btn-primary btn-primary-lg">Start matching →</Link>
+          </div>
+
+          <a href="#sample-match" className="hero-textlink">See a sample match ↓</a>
+
+          <p className="hero-reassure">First match free · No signup wall</p>
         </div>
       </section>
 
@@ -277,6 +349,54 @@ export default function HomePage() {
               <div className="pr-num">03</div>
               <div className="pr-name">No signup wall</div>
               <p className="pr-desc">First match is free. No email gate, no account creation. You see results before we ask for anything.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section className="testimonials" id="testimonials">
+        <div className="testimonials-inner">
+          <div className="testimonials-header">
+            <div className="testimonials-eyebrow">From people who moved</div>
+            <div className="testimonials-title">Movers who found their fit</div>
+          </div>
+
+          <div className="testimonial-grid">
+            <div className="testimonial-card">
+              <div className="testimonial-quote-mark">&ldquo;</div>
+              <p className="testimonial-quote">I moved from a small town to Chicago to start fresh, and CityTwin guided my decision. I settled quickly into a new neighborhood that feels like home.</p>
+              <div className="testimonial-person">
+                <div className="testimonial-avatar">H</div>
+                <div>
+                  <div className="testimonial-name">Honey</div>
+                  <div className="testimonial-city">Moved to Chicago</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="testimonial-card">
+              <div className="testimonial-quote-mark">&ldquo;</div>
+              <p className="testimonial-quote">The first time I moved to Dallas, I chose based on home price and regretted it. This time, CityTwin matched my expectations to reality. Everything I need is within reach.</p>
+              <div className="testimonial-person">
+                <div className="testimonial-avatar">L</div>
+                <div>
+                  <div className="testimonial-name">Levi</div>
+                  <div className="testimonial-city">Moved to Dallas</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="testimonial-card">
+              <div className="testimonial-quote-mark">&ldquo;</div>
+              <p className="testimonial-quote">Houston is huge and I had no idea where to start. I tried CityTwin and it narrowed my search to three spots. I ended up with the one that actually worked for me.</p>
+              <div className="testimonial-person">
+                <div className="testimonial-avatar">A</div>
+                <div>
+                  <div className="testimonial-name">Alex</div>
+                  <div className="testimonial-city">Moved to Houston</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
