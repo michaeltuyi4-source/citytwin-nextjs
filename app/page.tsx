@@ -390,7 +390,7 @@ export default function HomePage() {
 
             <div className="testimonial-card">
               <div className="testimonial-quote-mark">&ldquo;</div>
-              <p className="testimonial-quote">Houston is huge and I had no idea where to start. I tried CityTwin and it narrowed my search to three spots. I ended up with the one that actually worked for me.</p>
+              <p className="testimonial-quote">Houston felt overwhelming when I started looking. CityTwin cut it down to three real options, and I ended up somewhere that actually fits my life.</p>
               <div className="testimonial-person">
                 <div className="testimonial-avatar">A</div>
                 <div>
