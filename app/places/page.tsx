@@ -8,6 +8,7 @@ import CTLogo from '@/components/CTLogo';
 import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import { createClient } from '@/lib/supabase';
+import { getCategoryIcon } from '@/lib/categoryIcons';
 import type { MatchResult, Place } from '@/lib/types';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -15,18 +16,18 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 const API_BASE = 'https://citytwin-api.azurewebsites.net/api/places';
 
 const CATEGORIES = [
-  { id: 'coffeeShops',       label: 'Coffee',        icon: '☕' },
-  { id: 'foodScene',         label: 'Food',          icon: '🍜' },
-  { id: 'fitness',           label: 'Fitness',       icon: '💪' },
-  { id: 'faith',             label: 'Faith',         icon: '⛪' },
-  { id: 'outdoorSpaces',     label: 'Outdoors',      icon: '🌳' },
-  { id: 'nightlife',         label: 'Nightlife',     icon: '🎵' },
-  { id: 'culturalDiversity', label: 'Intl Markets',  icon: '🌍' },
-  { id: 'grocery',           label: 'Grocery',       icon: '🛒' },
-  { id: 'familyFriendly',    label: 'Family',        icon: '👨‍👩‍👧' },
-  { id: 'shopping',          label: 'Shopping',      icon: '🛍️' },
-  { id: 'entertainment',     label: 'Entertainment', icon: '🎭' },
-  { id: 'trails',            label: 'Trails',        icon: '🥾' },
+  { id: 'coffeeShops',       label: 'Coffee' },
+  { id: 'foodScene',         label: 'Food' },
+  { id: 'fitness',           label: 'Fitness' },
+  { id: 'faith',             label: 'Faith' },
+  { id: 'outdoorSpaces',     label: 'Outdoors' },
+  { id: 'nightlife',         label: 'Nightlife' },
+  { id: 'culturalDiversity', label: 'Intl Markets' },
+  { id: 'grocery',           label: 'Grocery' },
+  { id: 'familyFriendly',    label: 'Family' },
+  { id: 'shopping',          label: 'Shopping' },
+  { id: 'entertainment',     label: 'Entertainment' },
+  { id: 'trails',            label: 'Trails' },
 ];
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -36,6 +37,19 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
   const a = Math.sin(dLat / 2) ** 2 +
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizePlaces(data: any): Place[] {
+  return (data?.results || []).map((p: Record<string, unknown>) => ({
+    name:    p.name,
+    lat:     p.lat,
+    lng:     p.lng,
+    rating:  p.rating,
+    reviews: p.user_ratings_total,
+    address: p.vicinity,
+    open:    p.open_now,
+  })) as Place[];
 }
 
 export default function PlacesPage() {
@@ -58,11 +72,16 @@ export default function PlacesPage() {
   const [placeError, setPlaceError]       = useState(false);
   const [placeCounts, setPlaceCounts]     = useState<Record<string, number>>({});
   const [highlightedCard, setHighlighted] = useState<number | null>(null);
-  const [mapFullscreen, setMapFullscreen] = useState(false);
   const [authOpen, setAuthOpen]           = useState(false);
   const [upgradeOpen, setUpgradeOpen]     = useState(false);
-  const [switcherLocked, setSwitcherLocked] = useState(true);
+  const [isPremium, setIsPremium]         = useState(false);  // tier === 'premium'
   const placesCache = useRef<Record<string, Record<string, Place[]>>>({});
+  // Neighborhood ids whose category counts have already been prefetched this
+  // session. Guards the parallel fetch so it fires at most once per neighborhood.
+  const countsFetchedRef = useRef<Set<string>>(new Set());
+  // The neighborhood currently being viewed, so a late-resolving fetch only
+  // writes counts when its neighborhood is still active (not after a switch).
+  const activeCacheKeyRef = useRef<string>('');
 
   const supabase = createClient();
 
@@ -78,6 +97,44 @@ export default function PlacesPage() {
     if (raw)    setAllResults(JSON.parse(raw));
     if (rawPri) setUserPriorities(JSON.parse(rawPri));
   }, []);
+
+  // ── Prefetch counts for every category so all tabs show a count (incl. 0) ───────
+  useEffect(() => {
+    const result = allResults[activeIdx];
+    if (!result?.coords) return;
+    const { lat, lng } = result.coords;
+    const cacheKey = result.id || 'default';
+    activeCacheKeyRef.current = cacheKey;
+
+    // Always seed every tab from the in-memory cache so counts (incl. 0) show
+    // immediately, including when returning to an already-fetched neighborhood.
+    setPlaceCounts(() => {
+      const seed: Record<string, number> = {};
+      CATEGORIES.forEach((c) => { seed[c.id] = placesCache.current[cacheKey]?.[c.id]?.length ?? 0; });
+      return seed;
+    });
+
+    // Fetch the parallel batch at most once per neighborhood per session.
+    // Revisiting a neighborhood serves counts and place data from cache only.
+    if (countsFetchedRef.current.has(cacheKey)) return;
+    countsFetchedRef.current.add(cacheKey);
+
+    CATEGORIES.forEach(async (cat) => {
+      if (placesCache.current[cacheKey]?.[cat.id]) return; // already cached and counted
+      try {
+        const res  = await fetch(`${API_BASE}?lat=${lat}&lng=${lng}&type=${cat.id}&radius=4827`);
+        const data = await res.json();
+        const fetched = normalizePlaces(data);
+        if (!placesCache.current[cacheKey]) placesCache.current[cacheKey] = {};
+        placesCache.current[cacheKey][cat.id] = fetched;
+        // Only apply if this neighborhood is still the one being viewed.
+        if (activeCacheKeyRef.current === cacheKey) {
+          setPlaceCounts((prev) => ({ ...prev, [cat.id]: fetched.length }));
+        }
+      } catch { /* leave this category's count at 0; not retried this session */ }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIdx, allResults]);
 
   // ── Init Mapbox ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -144,35 +201,35 @@ export default function PlacesPage() {
   }, [allResults]);
 
   // ── Auth gate ─────────────────────────────────────────────────────────────────
-  const handleSession = useCallback(async (session: { user: { id: string } } | null) => {
-    if (!session) { setSwitcherLocked(true); return; }
+  // Reads the LIVE session and tier (profiles.tier, the same source of truth the
+  // rest of the app uses for premium) and updates the signed-in and premium
+  // signals. Returns whether the user is premium right now. Called at mount, on
+  // auth changes, and at click time, so the gate never relies on a stale
+  // mount-time tier value (e.g. right after a Stripe upgrade).
+  const refreshPremium = useCallback(async (): Promise<{ signedIn: boolean; premium: boolean }> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setIsPremium(false); return { signedIn: false, premium: false }; }
     const { data: profile } = await supabase
       .from('profiles').select('tier').eq('id', session.user.id).single();
-    if (profile?.tier === 'premium') {
-      setSwitcherLocked(false);
-    } else {
-      setSwitcherLocked(false); // logged in but free — allow, upgrade on click
-    }
+    const premium = profile?.tier === 'premium';
+    setIsPremium(premium);
+    return { signedIn: true, premium };
   }, [supabase]);
 
   useEffect(() => {
-    async function applyGate() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) await handleSession(session);
-    }
-    applyGate();
+    refreshPremium();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         setAuthOpen(false);
-        await handleSession(session);
+        await refreshPremium();
       } else if (event === 'SIGNED_OUT') {
-        setSwitcherLocked(true);
+        setIsPremium(false);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [handleSession, supabase.auth]);
+  }, [refreshPremium, supabase.auth]);
 
   // ── Clear markers helper ──────────────────────────────────────────────────────
   function clearMarkers() {
@@ -187,7 +244,7 @@ export default function PlacesPage() {
 
     const cacheKey = allResults[activeIdx]?.id || 'default';
     if (placesCache.current[cacheKey]?.[cat.id]) {
-      renderPlaces(placesCache.current[cacheKey][cat.id], cat);
+      renderPlaces(placesCache.current[cacheKey][cat.id]);
       return;
     }
 
@@ -200,28 +257,20 @@ export default function PlacesPage() {
       const url = `${API_BASE}?lat=${coords.lat}&lng=${coords.lng}&type=${cat.id}&radius=4827`;
       const res  = await fetch(url);
       const data = await res.json();
-      const fetched: Place[] = (data.results || []).map((p: Record<string, unknown>) => ({
-        name:    p.name,
-        lat:     p.lat,
-        lng:     p.lng,
-        rating:  p.rating,
-        reviews: p.user_ratings_total,
-        address: p.vicinity,
-        open:    p.open_now,
-      }));
+      const fetched = normalizePlaces(data);
 
       if (!placesCache.current[cacheKey]) placesCache.current[cacheKey] = {};
       placesCache.current[cacheKey][cat.id] = fetched;
 
       setPlaceCounts((prev) => ({ ...prev, [cat.id]: fetched.length }));
-      renderPlaces(fetched, cat);
+      renderPlaces(fetched);
     } catch {
       setPlaceError(true);
       setPlaceLoading(false);
     }
   }
 
-  function renderPlaces(data: Place[], cat: typeof CATEGORIES[0]) {
+  function renderPlaces(data: Place[]) {
     setPlaces(data);
     setPlaceLoading(false);
     clearMarkers();
@@ -237,8 +286,8 @@ export default function PlacesPage() {
       const el    = document.createElement('div');
       el.style.cssText = 'width:32px;height:32px;background:var(--navy);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid white;cursor:pointer;box-shadow:0 2px 8px rgba(22,47,74,.3);transition:transform .2s;display:flex;align-items:center;justify-content:center;';
       const inner = document.createElement('div');
-      inner.style.cssText = 'transform:rotate(45deg);font-size:.75rem;line-height:1;';
-      inner.textContent = cat.icon;
+      inner.style.cssText = 'transform:rotate(45deg);display:flex;align-items:center;justify-content:center;';
+      inner.innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24" fill="#ffffff"><circle cx="12" cy="12" r="7"/></svg>';
       el.appendChild(inner);
 
       const popup = new mapboxgl.Popup({ offset: 30, closeButton: false }).setHTML(
@@ -270,9 +319,19 @@ export default function PlacesPage() {
   }
 
   // ── Switch neighborhood ───────────────────────────────────────────────────────
-  function switchNeighborhood(index: number) {
-    if (index > 0 && switcherLocked) { setAuthOpen(true); return; }
-    if (index > 0 && !switcherLocked) { setUpgradeOpen(true); return; }
+  async function switchNeighborhood(index: number) {
+    // Match #1 is always free. For #2/#3, premium users switch with no modal,
+    // unlimited times. Non-premium get the unlock prompt (auth if signed out,
+    // upgrade if signed in free). isPremium short-circuits so premium switches
+    // are instant with no query; otherwise re-check tier live to catch a
+    // just-upgraded user rather than trusting stale mount-time state.
+    if (index > 0 && !isPremium) {
+      const { signedIn, premium } = await refreshPremium();
+      if (!premium) {
+        if (signedIn) setUpgradeOpen(true); else setAuthOpen(true);
+        return;
+      }
+    }
 
     setActiveIdx(index);
     clearMarkers();
@@ -294,12 +353,6 @@ export default function PlacesPage() {
     } else if (CATEGORIES.length > 0) {
       selectCategory(CATEGORIES[0]);
     }
-  }
-
-  // ── Map fullscreen toggle ─────────────────────────────────────────────────────
-  function toggleMapFullscreen() {
-    setMapFullscreen((v) => !v);
-    setTimeout(() => mapRef.current?.resize(), 350);
   }
 
   // ── Address search ────────────────────────────────────────────────────────────
@@ -346,15 +399,10 @@ export default function PlacesPage() {
           distEl.style.cssText = 'font-size:.7rem;color:var(--navy-soft);font-weight:600;margin-top:4px';
           card.appendChild(distEl);
         }
-        distEl.textContent = `📍 ${dist.toFixed(1)} mi from your address`;
+        distEl.textContent = `${dist.toFixed(1)} mi from your address`;
       });
     });
   }
-
-  const mapEl     = mapFullscreen ? 'map-fullscreen' : '';
-  const panelEl   = mapFullscreen ? 'panel-hidden'   : '';
-  const toggleIco = mapFullscreen ? '✕' : '🗺️';
-  const toggleLbl = mapFullscreen ? 'Close map' : 'Full map';
 
   // Sort categories: user priorities first
   const priorityOrder: Record<string, number> = { 'must-have': 0, 'important': 1, 'nice-to-have': 2 };
@@ -365,7 +413,7 @@ export default function PlacesPage() {
   });
 
   return (
-    <div style={{ fontFamily: 'var(--font-body)', background: 'var(--brand-50)', color: 'var(--navy)', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ fontFamily: 'var(--font-body)', background: 'linear-gradient(180deg, #ECF1F8 0%, #F5F1E9 55%, #FBF6EE 100%)', color: 'var(--navy)', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', WebkitFontSmoothing: 'antialiased' }}>
 
       {/* ── NAV ── */}
       <nav className="places-nav">
@@ -383,7 +431,7 @@ export default function PlacesPage() {
         </div>
         <div className="header-sub">
           {currentResult
-            ? `Showing real venues near ${currentResult.name} - filtered by your priorities`
+            ? `Showing real venues near ${currentResult.name}, filtered by your priorities`
             : 'Loading your lifestyle map…'}
         </div>
       </div>
@@ -395,7 +443,7 @@ export default function PlacesPage() {
             <span className="switcher-label">Explore</span>
             {allResults.map((r, i) => {
               const rankLabels = ['#1 match', '#2 match', '#3 match'];
-              const locked = i > 0 && switcherLocked;
+              const locked = i > 0 && !isPremium;
               return (
                 <button
                   key={i}
@@ -404,7 +452,14 @@ export default function PlacesPage() {
                 >
                   <span className="switcher-rank">{rankLabels[i] || `#${i + 1}`}</span>
                   {r.name}
-                  {locked && <span className="switcher-lock">🔒</span>}
+                  {locked && (
+                    <span className="switcher-lock" aria-hidden="true">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="5" y="11" width="14" height="10" rx="2" />
+                        <path d="M8 11V7a4 4 0 018 0v4" />
+                      </svg>
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -421,47 +476,38 @@ export default function PlacesPage() {
               className={`tab${activeCat === cat.id ? ' active' : ''}`}
               onClick={() => selectCategory(cat)}
             >
-              <span className="tab-icon">{cat.icon}</span>
+              <span className="tab-icon">{getCategoryIcon(cat.id, 16)}</span>
               {cat.label}
-              <span className="tab-count">{placeCounts[cat.id] ?? '—'}</span>
+              <span className="tab-count">{placeCounts[cat.id] ?? 0}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* ── MAIN: MAP + PANEL ── */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', minHeight: 0 }}>
+      <div className="places-main">
 
         {/* Map container */}
-        <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+        <div className="places-map-wrap">
           <div
             id="map"
             ref={mapContainerRef}
-            className={mapEl}
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
           />
         </div>
 
-        {/* Mobile fullscreen toggle */}
-        <button
-          className={`map-toggle-btn${mapFullscreen ? ' map-mode' : ''}`}
-          style={mapFullscreen ? { position: 'fixed', bottom: 20, right: 16, zIndex: 500 } : {}}
-          onClick={toggleMapFullscreen}
-        >
-          <span>{toggleIco}</span>
-          <span>{toggleLbl}</span>
-        </button>
-
         {/* Sidebar */}
-        <div
-          className={`places-panel${panelEl ? ` ${panelEl}` : ''}`}
-          style={{ width: '340px', flexShrink: 0, background: '#FFFFFF', borderLeft: '1px solid #E8EFF6', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-        >
+        <div className="places-panel">
           <div className="panel-head">
             <div className="panel-title">
-              {activeCat
-                ? `${CATEGORIES.find((c) => c.id === activeCat)?.icon} ${CATEGORIES.find((c) => c.id === activeCat)?.label} nearby`
-                : 'Nearby places'}
+              {activeCat ? (
+                <span className="panel-title-inner">
+                  <span className="panel-title-icon">{getCategoryIcon(activeCat, 16)}</span>
+                  {CATEGORIES.find((c) => c.id === activeCat)?.label} nearby
+                </span>
+              ) : (
+                'Nearby places'
+              )}
             </div>
             <div className="panel-sub">
               {placeLoading
@@ -484,7 +530,12 @@ export default function PlacesPage() {
                 onFocus={(e) => { e.target.style.borderColor = 'var(--navy-mid)'; }}
                 onBlur={(e)  => { e.target.style.borderColor = 'var(--blue-pale)'; }}
               />
-              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: '.85rem', pointerEvents: 'none' }}>🔍</span>
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', display: 'inline-flex', color: 'var(--slate-400)', pointerEvents: 'none' }} aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.3-4.3" />
+                </svg>
+              </span>
             </div>
             {addressResults.length > 0 && (
               <div style={{ background: 'var(--white)', border: '1px solid var(--blue-pale)', borderRadius: 10, marginTop: 4, maxHeight: 160, overflowY: 'auto', boxShadow: 'var(--shadow-soft)' }}>
@@ -496,7 +547,13 @@ export default function PlacesPage() {
                     onMouseOver={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--blue-mist)'; }}
                     onMouseOut={(e)  => { (e.currentTarget as HTMLElement).style.background = ''; }}
                   >
-                    📍 {f.place_name}
+                    <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginRight: 6, color: 'var(--amber)' }} aria-hidden="true">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0118 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                    </span>
+                    {f.place_name}
                   </div>
                 ))}
               </div>
@@ -515,14 +572,19 @@ export default function PlacesPage() {
             )}
             {placeError && (
               <div className="empty-state">
-                <div className="empty-icon">⚠️</div>
+                <div className="empty-icon" aria-hidden="true">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+                    <path d="M12 9v4M12 17h.01" />
+                  </svg>
+                </div>
                 <div className="empty-title">Couldn&apos;t load places</div>
                 <div className="empty-sub">Check your connection and try again.</div>
               </div>
             )}
             {!placeLoading && !placeError && places.length === 0 && activeCat && (
               <div className="empty-state">
-                <div className="empty-icon">{CATEGORIES.find((c) => c.id === activeCat)?.icon}</div>
+                <div className="empty-icon" aria-hidden="true">{getCategoryIcon(activeCat, 32)}</div>
                 <div className="empty-title">None found nearby</div>
                 <div className="empty-sub">
                   No {CATEGORIES.find((c) => c.id === activeCat)?.label?.toLowerCase()} found within 1 mile of {currentResult?.name}. Try another category.
@@ -566,7 +628,7 @@ export default function PlacesPage() {
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
         heading="Unlock all neighborhoods"
-        sub="Sign up to explore all three of your matched neighborhoods - free account, no credit card required."
+        sub="Sign up to explore all three of your matched neighborhoods, free account, no credit card required."
       />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </div>
