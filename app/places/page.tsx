@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import CTLogo from '@/components/CTLogo';
+import NavAuth from '@/components/NavAuth';
 import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import { createClient } from '@/lib/supabase';
@@ -219,10 +220,16 @@ export default function PlacesPage() {
   useEffect(() => {
     refreshPremium();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // INITIAL_SESSION fires on a hard reload that restores a persisted session
+      // (SIGNED_IN only fires on a fresh interactive login). Handle both so the
+      // premium tier is re-read and the switcher stays unlocked on reload.
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         setAuthOpen(false);
-        await refreshPremium();
+        // Defer out of the callback: calling Supabase (getSession + profiles
+        // query in refreshPremium) directly inside onAuthStateChange deadlocks
+        // on the INITIAL_SESSION path while GoTrue holds its auth lock.
+        setTimeout(() => { refreshPremium(); }, 0);
       } else if (event === 'SIGNED_OUT') {
         setIsPremium(false);
       }
@@ -421,7 +428,10 @@ export default function PlacesPage() {
           <CTLogo size={32} />
           <span className="nav-brand-name">CityTwin</span>
         </Link>
-        <Link href="/results" className="nav-back">← Back to results</Link>
+        <div className="nav-end">
+          <Link href="/results" className="nav-back">← Back to results</Link>
+          <NavAuth />
+        </div>
       </nav>
 
       {/* ── PAGE HEADER ── */}

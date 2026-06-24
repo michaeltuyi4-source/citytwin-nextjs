@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CTLogo from '@/components/CTLogo';
+import NavAuth from '@/components/NavAuth';
 
 export default function AboutPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -51,6 +52,7 @@ export default function AboutPage() {
         </div>
 
         <div className="nav-actions">
+          <NavAuth />
           <Link href="/find" className="nav-cta">Start matching →</Link>
         </div>
 
@@ -75,6 +77,8 @@ export default function AboutPage() {
         >
           Request a Demo
         </button>
+        <div className="mm-divider" />
+        <NavAuth variant="mobile" onAction={() => setMenuOpen(false)} />
       </div>
 
       {/* ── DEMO MODAL ── */}

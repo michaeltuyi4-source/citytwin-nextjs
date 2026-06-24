@@ -4,14 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import CTLogo from '@/components/CTLogo';
-import AuthModal from '@/components/AuthModal';
+import NavAuth from '@/components/NavAuth';
 
 export default function HomePage() {
   const [menuOpen, setMenuOpen]     = useState(false);
   const [demoOpen, setDemoOpen]     = useState(false);
   const [demoSuccess, setDemoSuccess] = useState('');
   const [demoEmail, setDemoEmail]   = useState('');
-  const [authOpen, setAuthOpen]     = useState(false);
   const [heroVisible, setHeroVisible] = useState(true);
   const [year, setYear]             = useState('');
   const heroRef = useRef<HTMLElement | null>(null);
@@ -69,13 +68,7 @@ export default function HomePage() {
         </div>
 
         <div className="nav-actions">
-          <button
-            type="button"
-            className="nav-signin"
-            onClick={() => setAuthOpen(true)}
-          >
-            Sign in
-          </button>
+          <NavAuth />
           <Link
             href="/find"
             className={`nav-cta${heroVisible ? ' nav-cta-hidden' : ''}`}
@@ -123,17 +116,7 @@ export default function HomePage() {
 
         <div className="mm-divider" />
 
-        <button
-          type="button"
-          className="mm-signin"
-          onClick={() => { setMenuOpen(false); setAuthOpen(true); }}
-        >
-          <svg className="mm-user" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          Sign in
-        </button>
+        <NavAuth variant="mobile" onAction={() => setMenuOpen(false)} />
       </div>
 
       {/* ── DEMO MODAL ── */}
@@ -195,14 +178,6 @@ export default function HomePage() {
           )}
         </div>
       </div>
-
-      {/* ── AUTH MODAL ── */}
-      <AuthModal
-        isOpen={authOpen}
-        onClose={() => setAuthOpen(false)}
-        heading="Welcome back"
-        sub="Sign in to pick up where you left off."
-      />
 
       {/* ── HERO ── */}
       <section className="hero" id="hero" ref={heroRef}>

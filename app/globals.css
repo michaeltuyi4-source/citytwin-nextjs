@@ -90,6 +90,41 @@ body {
   padding: 8px 6px; white-space: nowrap; transition: color .15s;
 }
 .nav-signin:hover { color: var(--brand-700); }
+/* Logged-in avatar + dropdown (matches the testimonial avatar treatment). */
+.nav-user { position: relative; display: inline-flex; }
+.nav-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--brand-900); color: var(--white);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-body); font-size: .82rem; font-weight: 700;
+  border: none; cursor: pointer; flex-shrink: 0; transition: box-shadow .15s, transform .1s;
+}
+.nav-avatar:hover { box-shadow: 0 2px 10px rgba(22,47,74,.28); }
+.nav-avatar:active { transform: scale(.96); }
+.nav-dropdown {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 300;
+  min-width: 220px; background: var(--white);
+  border: 1px solid rgba(22,47,74,.1); border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(22,47,74,.16); padding: 6px;
+  display: flex; flex-direction: column;
+}
+.nav-dropdown-email {
+  font-size: .72rem; color: var(--slate-500); padding: 8px 10px 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;
+}
+.nav-dropdown-divider { height: 1px; background: rgba(22,47,74,.08); margin: 2px 6px 4px; }
+.nav-dropdown-item {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; cursor: pointer; text-decoration: none;
+  font-family: var(--font-body); font-size: .85rem; font-weight: 500; color: var(--brand-900);
+  padding: 9px 10px; border-radius: 8px; transition: background .12s;
+}
+.nav-dropdown-item:hover { background: var(--brand-50); }
+.nav-dropdown-signout { color: var(--red); }
+.nav-dropdown-disabled { color: var(--slate-400); cursor: default; }
+.nav-dropdown-disabled:hover { background: none; }
+/* Right-side group for custom navs (find/places/results): existing action + avatar. */
+.nav-end { display: inline-flex; align-items: center; gap: 14px; }
 .nav-back {
   color: var(--navy);
   text-decoration: none;
@@ -157,6 +192,16 @@ body {
 }
 .mm-signin:hover { color: var(--brand-700); }
 .mm-user { color: var(--amber); flex-shrink: 0; }
+/* Logged-in account block inside the mobile hamburger menu. */
+.mm-account { display: flex; flex-direction: column; }
+.mm-account-email { font-size: .8rem; color: var(--slate-500); padding: 8px 4px 4px; word-break: break-all; }
+.mm-account-item {
+  display: block; text-align: left; background: none; border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: .95rem; font-weight: 600; color: var(--brand-900);
+  padding: 12px 4px; transition: color .15s;
+}
+.mm-account-item.mm-signout { color: var(--red); }
+.mm-account-disabled { color: var(--slate-400); cursor: default; }
 .mm-ghost {
   display: flex; align-items: center; justify-content: center;
   background: transparent; color: var(--brand-700);
@@ -197,6 +242,7 @@ body {
 .modal-card {
   background: var(--white); border-radius: 24px; padding: 36px 32px;
   width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(22,47,74,.2); position: relative;
+  max-height: 90vh; overflow-y: auto;
 }
 .modal-close {
   position: absolute; top: 16px; right: 18px; background: none; border: none;
@@ -242,6 +288,7 @@ body {
 .upgrade-card {
   background: var(--white); border-radius: 24px; padding: 36px 32px;
   width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(22,47,74,.2); position: relative;
+  max-height: 90vh; overflow-y: auto;
 }
 .upgrade-badge {
   display: inline-block; font-size: .7rem; font-weight: 600; letter-spacing: .08em;
@@ -1357,7 +1404,10 @@ body {
 ═══════════════════════════════════════════════ */
 @media(max-width:960px) {
   .nav { padding: 0 20px; }
-  .nav-links, .nav-cta, .nav-signin { display: none; }
+  .nav-links, .nav-cta { display: none; }
+  /* Standard nav has a hamburger menu, so hide the top auth control there only.
+     Custom navs (find/places/results) keep the avatar/Sign in visible on mobile. */
+  .nav .nav-signin, .nav .nav-user { display: none; }
   .hamburger { display: flex; }
   .hero-content { padding: 28px 22px 32px; }
   .steps { grid-template-columns: 1fr; }

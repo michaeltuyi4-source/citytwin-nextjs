@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CTLogo from "@/components/CTLogo";
+import NavAuth from "@/components/NavAuth";
 
 export const metadata = {
   title: "Terms of Use - CityTwin",
@@ -36,6 +37,7 @@ export default function TermsPage() {
           <span className="nav-brand-name">CityTwin</span>
         </Link>
         <div className="nav-actions">
+          <NavAuth />
           <Link href="/find" className="nav-cta">
             Start matching →
           </Link>

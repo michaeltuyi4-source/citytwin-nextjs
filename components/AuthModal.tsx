@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase';
 
 interface AuthModalProps {
@@ -15,7 +16,7 @@ export default function AuthModal({
   isOpen,
   onClose,
   heading = 'Unlock all matches',
-  sub = 'Create a free account — no credit card required.',
+  sub = 'Create a free account, no credit card required.',
   onSignupSuccess,
 }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('signup');
@@ -41,12 +42,19 @@ export default function AuthModal({
         const { error: err } = await supabase.auth.signUp({ email, password });
         if (err) { setError(err.message); } else { setSuccess('Check your email to confirm your account.'); onSignupSuccess?.(); }
       } else {
+        // Tolerate an already-authenticated user: do not hang, just close.
+        const { data: { session: existing } } = await supabase.auth.getSession();
+        if (existing) { onClose(); return; }
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-        if (err) setError(err.message);
+        if (err) { setError(err.message); return; }
+        // Close on success directly. The nav avatar updates live via the
+        // onAuthStateChange listener, but closing must not depend on that
+        // event reaching another component.
+        onClose();
       }
     } catch (thrown) {
       console.error('[auth-modal] signInWithPassword threw (not returned error)', thrown);
-      setError('Unexpected error — please try again.');
+      setError('Unexpected error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -61,7 +69,11 @@ export default function AuthModal({
 
   const isSignup = activeTab === 'signup';
 
-  return (
+  // Render via a portal to document.body. The nav has backdrop-filter, which
+  // makes it a containing block for position: fixed descendants, so a modal
+  // rendered inside the nav (via NavAuth) would be clipped to the nav instead
+  // of the viewport. The portal lets the fixed backdrop fill the viewport.
+  const modal = (
     <div
       className="modal-backdrop"
       role="dialog"
@@ -137,6 +149,8 @@ export default function AuthModal({
       </div>
     </div>
   );
+
+  return typeof document === 'undefined' ? null : createPortal(modal, document.body);
 }
 
 function GoogleIcon() {
