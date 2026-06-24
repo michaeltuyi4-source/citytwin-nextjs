@@ -220,10 +220,16 @@ export default function PlacesPage() {
   useEffect(() => {
     refreshPremium();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // INITIAL_SESSION fires on a hard reload that restores a persisted session
+      // (SIGNED_IN only fires on a fresh interactive login). Handle both so the
+      // premium tier is re-read and the switcher stays unlocked on reload.
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         setAuthOpen(false);
-        await refreshPremium();
+        // Defer out of the callback: calling Supabase (getSession + profiles
+        // query in refreshPremium) directly inside onAuthStateChange deadlocks
+        // on the INITIAL_SESSION path while GoTrue holds its auth lock.
+        setTimeout(() => { refreshPremium(); }, 0);
       } else if (event === 'SIGNED_OUT') {
         setIsPremium(false);
       }

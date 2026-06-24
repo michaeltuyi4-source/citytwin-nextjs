@@ -162,11 +162,18 @@ export default function ResultsPage() {
     }
     applyGate();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // INITIAL_SESSION fires on a hard reload that restores a persisted session
+      // (SIGNED_IN only fires on a fresh interactive login). Handle both so the
+      // premium tier is re-read and the gate unlocks on reload, not just on login.
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         setSession(session);
         setAuthOpen(false);
-        await handleSession(session);
+        // Defer the tier read out of the callback. Calling Supabase (the
+        // profiles query) directly inside onAuthStateChange deadlocks on the
+        // INITIAL_SESSION path, because the callback runs while GoTrue holds
+        // its auth lock. setTimeout releases the lock first.
+        setTimeout(() => { handleSession(session); }, 0);
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
         setUpgradeOpen(false);
