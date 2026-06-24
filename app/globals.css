@@ -242,6 +242,7 @@ body {
 .modal-card {
   background: var(--white); border-radius: 24px; padding: 36px 32px;
   width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(22,47,74,.2); position: relative;
+  max-height: 90vh; overflow-y: auto;
 }
 .modal-close {
   position: absolute; top: 16px; right: 18px; background: none; border: none;
@@ -287,6 +288,7 @@ body {
 .upgrade-card {
   background: var(--white); border-radius: 24px; padding: 36px 32px;
   width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(22,47,74,.2); position: relative;
+  max-height: 90vh; overflow-y: auto;
 }
 .upgrade-badge {
   display: inline-block; font-size: .7rem; font-weight: 600; letter-spacing: .08em;
