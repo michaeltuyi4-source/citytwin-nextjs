@@ -164,7 +164,16 @@ export default function AboutPage() {
           <p className="ab-body ab-body-end">If you&apos;re moving, I hope it helps you land somewhere your life already fits.</p>
 
           <div className="ab-signature">
-            <div className="ab-sig-name">— Michael</div>
+            <div
+              style={{
+                width: 24,
+                height: 2,
+                background: "var(--amber)",
+                borderRadius: 1,
+                marginBottom: 12,
+              }}
+            />
+            <div className="ab-sig-name">Michael</div>
             <div className="ab-sig-role">Founder, CityTwin</div>
           </div>
 
