@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import CTLogo from '@/components/CTLogo';
+import NavAuth from '@/components/NavAuth';
 import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import ShareModal from '@/components/ShareModal';
@@ -120,7 +121,7 @@ export default function ResultsPage() {
               setUnlocked(true);
               return;
             }
-            // Webhook hasn't updated yet — poll every second for up to 15s
+            // Webhook hasn't updated yet, poll every second for up to 15s
             setPaymentProcessing(true);
             let attempts = 0;
             pollRef.current = setInterval(async () => {
@@ -135,7 +136,7 @@ export default function ResultsPage() {
                 setPaymentProcessing(false);
                 clearInterval(pollRef.current!);
                 pollRef.current = null;
-                toast.success('Your matches are unlocked!', { description: 'Welcome to CityTwin — all three neighborhoods are now yours.' });
+                toast.success('Your matches are unlocked!', { description: 'Welcome to CityTwin. All three neighborhoods are now yours.' });
               } else if (attempts >= 15) {
                 clearInterval(pollRef.current!);
                 pollRef.current = null;
@@ -229,7 +230,7 @@ export default function ResultsPage() {
   // Silence unused-variable warning; priorities is preserved for Phase 2b use
   void priorities;
 
-  // Not yet hydrated from storage — render nothing to avoid flash
+  // Not yet hydrated from storage, render nothing to avoid flash
   if (!hydrated) return null;
 
   // Empty state (only shown after hydration confirms no results)
@@ -264,9 +265,12 @@ export default function ResultsPage() {
             <CTLogo size={32} />
             <span className="rp-nav-brand-name">CityTwin</span>
           </Link>
-          <button onClick={handleChangePriorities} className="rp-nav-cta">
-            Change priorities
-          </button>
+          <div className="nav-end">
+            <button onClick={handleChangePriorities} className="rp-nav-cta">
+              Change priorities
+            </button>
+            <NavAuth />
+          </div>
         </div>
       </nav>
 

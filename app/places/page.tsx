@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import CTLogo from '@/components/CTLogo';
+import NavAuth from '@/components/NavAuth';
 import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import { createClient } from '@/lib/supabase';
@@ -421,7 +422,10 @@ export default function PlacesPage() {
           <CTLogo size={32} />
           <span className="nav-brand-name">CityTwin</span>
         </Link>
-        <Link href="/results" className="nav-back">← Back to results</Link>
+        <div className="nav-end">
+          <Link href="/results" className="nav-back">← Back to results</Link>
+          <NavAuth />
+        </div>
       </nav>
 
       {/* ── PAGE HEADER ── */}

@@ -5,6 +5,7 @@ import type { PriorityLabel } from '@/lib/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CTLogo from '@/components/CTLogo';
+import NavAuth from '@/components/NavAuth';
 // @ts-ignore - JS module with no type declarations
 import { LIFESTYLE_CATEGORIES } from '@/neighborhoods';
 // @ts-ignore
@@ -240,7 +241,10 @@ export default function FindPage() {
           <CTLogo size={32} />
           <span className="nav-brand-name">CityTwin</span>
         </Link>
-        <Link href="/" className="nav-back">← Home</Link>
+        <div className="nav-end">
+          <Link href="/" className="nav-back">← Home</Link>
+          <NavAuth />
+        </div>
       </nav>
 
       <div className="progress-wrap">

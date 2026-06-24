@@ -15,7 +15,7 @@ export default function AuthModal({
   isOpen,
   onClose,
   heading = 'Unlock all matches',
-  sub = 'Create a free account — no credit card required.',
+  sub = 'Create a free account, no credit card required.',
   onSignupSuccess,
 }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('signup');
@@ -41,12 +41,15 @@ export default function AuthModal({
         const { error: err } = await supabase.auth.signUp({ email, password });
         if (err) { setError(err.message); } else { setSuccess('Check your email to confirm your account.'); onSignupSuccess?.(); }
       } else {
+        // Tolerate an already-authenticated user: do not hang, just close.
+        const { data: { session: existing } } = await supabase.auth.getSession();
+        if (existing) { onClose(); return; }
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) setError(err.message);
       }
     } catch (thrown) {
       console.error('[auth-modal] signInWithPassword threw (not returned error)', thrown);
-      setError('Unexpected error — please try again.');
+      setError('Unexpected error. Please try again.');
     } finally {
       setLoading(false);
     }
