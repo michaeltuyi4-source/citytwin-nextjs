@@ -13,7 +13,7 @@ import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
 import ShareModal from '@/components/ShareModal';
 import { createClient } from '@/lib/supabase';
-import { getCityPhoto, getNeighborhoodPhoto, getCityLabel } from '@/lib/photos';
+import { getCityPhoto, getCityLabel } from '@/lib/photos';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import type { MatchResult, PhraseChip, Gap } from '@/lib/types';
 
@@ -367,7 +367,7 @@ export default function ResultsPage() {
           <div className="rp-card-photo">
             {mounted && (
               <Image
-                src={getNeighborhoodPhoto(activeMatch.id, cityKey)}
+                src={getCityPhoto(cityKey)}
                 alt={`Street scene in ${activeMatch.name}`}
                 fill
                 sizes="(max-width: 700px) 100vw, 600px"
