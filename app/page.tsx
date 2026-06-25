@@ -413,25 +413,26 @@ export default function HomePage() {
               <a className="ft-link" href="mailto:hello@citytwinapp.com">For businesses</a>
             </div>
 
-            <div className="ft-col">
+            <div className="ft-col ft-col-cities">
               <div className="ft-col-title">Cities live</div>
-              <Link className="ft-link" href="/find">Charlotte, NC</Link>
-              <Link className="ft-link" href="/find">Chicago, IL</Link>
-              <Link className="ft-link" href="/find">Atlanta, GA</Link>
-              <Link className="ft-link" href="/find">Dallas, TX</Link>
-              <Link className="ft-link" href="/find">Houston, TX</Link>
-              <Link className="ft-link" href="/find">Seattle, WA</Link>
-              <Link className="ft-link" href="/find">Phoenix, AZ</Link>
-              <Link className="ft-link" href="/find">Montgomery County, MD</Link>
-            </div>
-
-            <div className="ft-col">
-              <div className="ft-col-title">Coming soon</div>
-              <div className="ft-link ft-link-dim">Denver</div>
-              <div className="ft-link ft-link-dim">Nashville</div>
-              <div className="ft-link ft-link-dim">Austin</div>
-              <div className="ft-link ft-link-dim">Miami</div>
-              <div className="ft-link ft-link-dim">Raleigh</div>
+              <div className="ft-cities-grid">
+                <Link className="ft-link" href="/find">Charlotte, NC</Link>
+                <Link className="ft-link" href="/find">Chicago, IL</Link>
+                <Link className="ft-link" href="/find">Atlanta, GA</Link>
+                <Link className="ft-link" href="/find">Dallas, TX</Link>
+                <Link className="ft-link" href="/find">Houston, TX</Link>
+                <Link className="ft-link" href="/find">Seattle, WA</Link>
+                <Link className="ft-link" href="/find">Phoenix, AZ</Link>
+                <Link className="ft-link" href="/find">Montgomery County, MD</Link>
+                <Link className="ft-link" href="/find">Austin, TX</Link>
+                <Link className="ft-link" href="/find">Denver, CO</Link>
+                <Link className="ft-link" href="/find">Nashville, TN</Link>
+                <Link className="ft-link" href="/find">Miami, FL</Link>
+                <Link className="ft-link" href="/find">Raleigh, NC</Link>
+                <Link className="ft-link" href="/find">Springfield, IL</Link>
+                <Link className="ft-link" href="/find">DC Metro, DC</Link>
+                <Link className="ft-link" href="/find">Northern Virginia, VA</Link>
+              </div>
               <a className="ft-link-request" href="mailto:hello@citytwinapp.com?subject=Request%20your%20city">Request your city →</a>
             </div>
 
