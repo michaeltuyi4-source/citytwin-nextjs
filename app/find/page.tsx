@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CTLogo from '@/components/CTLogo';
 import NavAuth from '@/components/NavAuth';
+import { ensureCityData } from '@/lib/neighborhoods-db';
 // @ts-ignore - JS module with no type declarations
 import { LIFESTYLE_CATEGORIES } from '@/neighborhoods';
 // @ts-ignore
@@ -20,6 +21,14 @@ const CITIES = [
   { key: 'seattle',    name: 'Seattle, WA',           state: 'Washington',     abbr: 'WA', note: 'Tech hub surrounded by mountains and water - highly walkable',                 region: 'West' },
   { key: 'phoenix',    name: 'Phoenix, AZ',           state: 'Arizona',        abbr: 'AZ', note: 'Sun Belt growth city with year-round sunshine and desert culture',             region: 'West' },
   { key: 'atlanta',    name: 'Atlanta, GA',           state: 'Georgia',        abbr: 'GA', note: "The South's capital - BeltLine trail, MARTA, strong cultural identity",       region: 'South' },
+  { key: 'austin',           name: 'Austin, TX',            state: 'Texas',                abbr: 'TX', note: 'Live music capital with a booming tech scene and a walkable central core',  region: 'South' },
+  { key: 'nashville',        name: 'Nashville, TN',         state: 'Tennessee',            abbr: 'TN', note: 'Music City, fast-growing with distinct walkable districts',                 region: 'South' },
+  { key: 'denver',           name: 'Denver, CO',            state: 'Colorado',             abbr: 'CO', note: 'Mile-high city with mountain access and active urban neighborhoods',       region: 'West' },
+  { key: 'miami',            name: 'Miami, FL',             state: 'Florida',              abbr: 'FL', note: 'Coastal and international, energetic with dense urban pockets',             region: 'South' },
+  { key: 'raleigh',          name: 'Raleigh, NC',           state: 'North Carolina',       abbr: 'NC', note: 'Research Triangle hub, green and family-friendly',                         region: 'South' },
+  { key: 'springfield',      name: 'Springfield, IL',       state: 'Illinois',             abbr: 'IL', note: 'Illinois capital, quiet and affordable',                                  region: 'Midwest' },
+  { key: 'dcmetro',          name: 'DC Metro, DC',          state: 'District of Columbia', abbr: 'DC', note: 'Capital core with transit-rich, walkable neighborhoods',                  region: 'Mid-Atlantic' },
+  { key: 'northernvirginia', name: 'Northern Virginia, VA', state: 'Virginia',             abbr: 'VA', note: 'DC-adjacent suburbs with strong transit and amenities',                   region: 'Mid-Atlantic' },
 ];
 
 const CITY_REGIONS = ['Midwest', 'South', 'West', 'Mid-Atlantic'] as const;
@@ -209,9 +218,13 @@ export default function FindPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const unset = [...selectedCats].filter((c) => !priorities[c]);
     if (unset.length > 0) { showError(3); return; }
+    // Ensure the city's neighborhoods are loaded (DB-only cities fetch from
+    // Supabase; shared cities use hardcoded data unless the source flag is 'db').
+    const ready = await ensureCityData(selectedCity!);
+    if (!ready) { showError(3); return; }
     const results = getTopMatches(selectedCity!, priorities, LIFESTYLE_CATEGORIES);
     sessionStorage.setItem('citytwin_results',    JSON.stringify(results));
     sessionStorage.setItem('citytwin_city',       selectedCity!);

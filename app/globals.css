@@ -579,6 +579,10 @@ body {
 .ft-link-dim { display: block; font-size: 0.8125rem; color: rgba(255, 255, 255, 0.4); margin-bottom: 10px; cursor: default; }
 .ft-link-request { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); text-decoration: none; margin-top: 6px; transition: opacity 0.15s ease; }
 .ft-link-request:hover { opacity: 0.8; }
+/* Cities section spans the two tracks the old Cities + Coming soon columns used,
+   and lays the 16 live cities out in two balanced sub-columns (8 down each). */
+.ft-col-cities { grid-column: span 2; }
+.ft-cities-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(8, auto); grid-auto-flow: column; column-gap: 40px; }
 .ft-bottom { max-width: 1200px; margin: 0 auto; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
 .ft-copy { font-size: 0.75rem; color: rgba(255, 255, 255, 0.35); }
 .ft-legal { display: flex; gap: 20px; }
