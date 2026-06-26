@@ -60,7 +60,7 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
         <div className="upgrade-badge">Free account</div>
         <h2 className="modal-heading" id="upgrade-modal-heading">Unlock your full results</h2>
         <p className="modal-sub">
-          You&apos;re in. Upgrade once to see all three matches — plus priority access to every new city we add.
+          You&apos;re in. Upgrade once to see all three matches, plus priority access to every new city we add.
         </p>
 
         <div className="pricing-options">

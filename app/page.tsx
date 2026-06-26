@@ -1,19 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import CTLogo from "@/components/CTLogo";
-import SignOutButton from "@/components/SignOutButton";
+import NavAuth from "@/components/NavAuth";
 
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
   const [demoSuccess, setDemoSuccess] = useState("");
   const [demoEmail, setDemoEmail] = useState("");
+  const [heroVisible, setHeroVisible] = useState(true);
   const [year, setYear] = useState("");
+  const heroRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     setYear(String(new Date().getFullYear()));
+  }, []);
+
+  // Scroll-triggered nav CTA: hide it while the hero is on screen,
+  // fade it in once the user scrolls past the hero.
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   function handleDemoSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -60,10 +76,13 @@ export default function HomePage() {
         </div>
 
         <div className="nav-actions">
-          <Link href="/find" className="nav-cta">
+          <NavAuth />
+          <Link
+            href="/find"
+            className={`nav-cta${heroVisible ? " nav-cta-hidden" : ""}`}
+          >
             Start matching →
           </Link>
-          <SignOutButton className="nav-cta-outline" />
         </div>
 
         <button
@@ -88,18 +107,75 @@ export default function HomePage() {
           className="mm-primary"
           onClick={() => setMenuOpen(false)}
         >
-          Start Matching →
+          Start matching →
         </Link>
-        <button
-          className="mm-ghost"
-          onClick={() => {
-            setMenuOpen(false);
-            setDemoOpen(true);
-            document.body.style.overflow = "hidden";
-          }}
-        >
-          Request a Demo
-        </button>
+
+        <nav className="mm-links">
+          <a
+            className="mm-link"
+            href="#how-it-works"
+            onClick={() => setMenuOpen(false)}
+          >
+            How it works
+            <svg
+              className="mm-chevron"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </a>
+          <a
+            className="mm-link"
+            href="#sample-match"
+            onClick={() => setMenuOpen(false)}
+          >
+            See a match
+            <svg
+              className="mm-chevron"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </a>
+          <a
+            className="mm-link"
+            href="mailto:hello@citytwinapp.com"
+            onClick={() => setMenuOpen(false)}
+          >
+            For businesses
+            <svg
+              className="mm-chevron"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </a>
+        </nav>
+
+        <div className="mm-divider" />
+
+        <NavAuth variant="mobile" onAction={() => setMenuOpen(false)} />
       </div>
 
       {/* ── DEMO MODAL ── */}
@@ -272,36 +348,43 @@ export default function HomePage() {
       </div>
 
       {/* ── HERO ── */}
-      <section className="hero" id="hero">
-        <div className="hero-left">
+      <section className="hero" id="hero" ref={heroRef}>
+        <div className="hero-banner">
+          <Image
+            src="/images/hero-farmers-market.jpg"
+            alt="Neighbors gathering at a local farmers market"
+            fill
+            priority
+            sizes="100vw"
+            quality={80}
+            style={{ objectFit: "cover", objectPosition: "center 40%" }}
+          />
+        </div>
+
+        <div className="hero-content">
           <div className="hero-pill">
             <span className="pill-dot" />
-            Neighborhood matching - now live
+            Neighborhood matching, now live
           </div>
 
-          <h1 className="hero-h1">
-            Moving to a new city shouldn&apos;t mean <em>starting over.</em>
-          </h1>
+          <h1 className="hero-h1">Moving doesn&apos;t mean starting over.</h1>
 
           <p className="hero-sub">
-            Find the neighborhood where your life already exists.
+            CityTwin matches you to neighborhoods that fit how you actually
+            live.
           </p>
 
           <div className="hero-actions">
-            <Link href="/find" className="btn-primary">
+            <Link href="/find" className="btn-primary btn-primary-lg">
               Start matching →
             </Link>
-            <a href="#how-it-works" className="btn-ghost">
-              See how it works
-            </a>
           </div>
-        </div>
 
-        <div className="hero-right">
-          <div
-            className="hero-image"
-            style={{ backgroundImage: "url('/images/hero_three_coffees.jpg')" }}
-          />
+          <a href="#sample-match" className="hero-textlink">
+            See a sample match ↓
+          </a>
+
+          <p className="hero-reassure">First match free · No signup wall</p>
         </div>
       </section>
 
@@ -528,6 +611,66 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── TESTIMONIALS ── */}
+      <section className="testimonials" id="testimonials">
+        <div className="testimonials-inner">
+          <div className="testimonials-header">
+            <div className="testimonials-eyebrow">From people who moved</div>
+            <div className="testimonials-title">Movers who found their fit</div>
+          </div>
+
+          <div className="testimonial-grid">
+            <div className="testimonial-card">
+              <div className="testimonial-quote-mark">&ldquo;</div>
+              <p className="testimonial-quote">
+                I moved from a small town to Chicago to start fresh, and
+                CityTwin guided my decision. I settled quickly into a new
+                neighborhood that feels like home.
+              </p>
+              <div className="testimonial-person">
+                <div className="testimonial-avatar">H</div>
+                <div>
+                  <div className="testimonial-name">Honey</div>
+                  <div className="testimonial-city">Moved to Chicago</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="testimonial-card">
+              <div className="testimonial-quote-mark">&ldquo;</div>
+              <p className="testimonial-quote">
+                The first time I moved to Dallas, I chose based on home price
+                and regretted it. This time, CityTwin matched my expectations to
+                reality. Everything I need is within reach.
+              </p>
+              <div className="testimonial-person">
+                <div className="testimonial-avatar">L</div>
+                <div>
+                  <div className="testimonial-name">Levi</div>
+                  <div className="testimonial-city">Moved to Dallas</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="testimonial-card">
+              <div className="testimonial-quote-mark">&ldquo;</div>
+              <p className="testimonial-quote">
+                Houston felt overwhelming when I started looking. CityTwin cut
+                it down to three real options, and I ended up somewhere that
+                actually fits my life.
+              </p>
+              <div className="testimonial-person">
+                <div className="testimonial-avatar">A</div>
+                <div>
+                  <div className="testimonial-name">Alex</div>
+                  <div className="testimonial-city">Moved to Houston</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── WHAT'S COMING ── */}
       <section className="coming-strip" id="coming">
         <div className="cs-inner">
@@ -573,41 +716,58 @@ export default function HomePage() {
               </a>
             </div>
 
-            <div className="ft-col">
+            <div className="ft-col ft-col-cities">
               <div className="ft-col-title">Cities live</div>
-              <Link className="ft-link" href="/find">
-                Charlotte, NC
-              </Link>
-              <Link className="ft-link" href="/find">
-                Chicago, IL
-              </Link>
-              <Link className="ft-link" href="/find">
-                Atlanta, GA
-              </Link>
-              <Link className="ft-link" href="/find">
-                Dallas, TX
-              </Link>
-              <Link className="ft-link" href="/find">
-                Houston, TX
-              </Link>
-              <Link className="ft-link" href="/find">
-                Seattle, WA
-              </Link>
-              <Link className="ft-link" href="/find">
-                Phoenix, AZ
-              </Link>
-              <Link className="ft-link" href="/find">
-                Montgomery County, MD
-              </Link>
-            </div>
-
-            <div className="ft-col">
-              <div className="ft-col-title">Coming soon</div>
-              <div className="ft-link ft-link-dim">Denver</div>
-              <div className="ft-link ft-link-dim">Nashville</div>
-              <div className="ft-link ft-link-dim">Austin</div>
-              <div className="ft-link ft-link-dim">Miami</div>
-              <div className="ft-link ft-link-dim">Raleigh</div>
+              <div className="ft-cities-grid">
+                <Link className="ft-link" href="/find">
+                  Charlotte, NC
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Chicago, IL
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Atlanta, GA
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Dallas, TX
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Houston, TX
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Seattle, WA
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Phoenix, AZ
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Montgomery County, MD
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Austin, TX
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Denver, CO
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Nashville, TN
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Miami, FL
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Raleigh, NC
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Springfield, IL
+                </Link>
+                <Link className="ft-link" href="/find">
+                  DC Metro, DC
+                </Link>
+                <Link className="ft-link" href="/find">
+                  Northern Virginia, VA
+                </Link>
+              </div>
               <a
                 className="ft-link-request"
                 href="mailto:hello@citytwinapp.com?subject=Request%20your%20city"
