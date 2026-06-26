@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CTLogo from '@/components/CTLogo';
+import SignOutButton from '@/components/SignOutButton';
 
 export default function AboutPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -52,6 +53,7 @@ export default function AboutPage() {
 
         <div className="nav-actions">
           <Link href="/find" className="nav-cta">Start matching →</Link>
+          <SignOutButton className="nav-cta-outline" />
         </div>
 
         <button

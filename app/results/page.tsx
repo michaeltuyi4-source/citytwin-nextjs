@@ -2,13 +2,14 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import CTLogo from '@/components/CTLogo';
 import AuthModal from '@/components/AuthModal';
+import SignOutButton from '@/components/SignOutButton';
 import UpgradeModal from '@/components/UpgradeModal';
 import ShareModal from '@/components/ShareModal';
 import { createClient } from '@/lib/supabase';
@@ -202,6 +203,9 @@ export default function ResultsPage() {
         setSession(session);
         setAuthOpen(false);
         await handleSession(session);
+        // Open upgrade modal for non-premium users after sign-in (including post-email-confirmation redirect)
+        const { data: profile } = await supabase.from('profiles').select('tier').eq('id', session.user.id).single();
+        if (profile?.tier !== 'premium') setUpgradeOpen(true);
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
         setUpgradeOpen(false);
@@ -222,15 +226,6 @@ export default function ResultsPage() {
     900,
     activeIdx
   );
-
-  const placeholderMatchCount = useMemo(() => {
-    if (!activeMatch) return 0;
-    let h = 0;
-    for (let i = 0; i < activeMatch.id.length; i++) {
-      h = ((h << 5) - h + activeMatch.id.charCodeAt(i)) & 0xffffffff;
-    }
-    return 80 + (Math.abs(h) % 260);
-  }, [activeMatch]);
 
   // Handlers
   function handleTabClick(idx: number) {
@@ -300,9 +295,12 @@ export default function ResultsPage() {
             <CTLogo size={32} />
             <span className="rp-nav-brand-name">CityTwin</span>
           </Link>
-          <button onClick={handleChangePriorities} className="rp-nav-cta">
-            Change priorities
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={handleChangePriorities} className="rp-nav-cta">
+              Change priorities
+            </button>
+            <SignOutButton />
+          </div>
         </div>
       </nav>
 
@@ -487,19 +485,6 @@ export default function ResultsPage() {
               </section>
             )}
 
-            <section className="rp-social-proof">
-              <span className="rp-social-proof-icon" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 00-3-3.87" />
-                  <path d="M16 3.13a4 4 0 010 7.75" />
-                </svg>
-              </span>
-              <span className="rp-social-proof-text">
-                {placeholderMatchCount} movers matched to {activeMatch.name} this month.
-              </span>
-            </section>
 
             {activeMatch.gaps && activeMatch.gaps.length > 0 && (
               <section className="rp-section">
@@ -514,6 +499,7 @@ export default function ResultsPage() {
                 </div>
               </section>
             )}
+
 
           </div>
         </article>
@@ -545,19 +531,19 @@ export default function ResultsPage() {
             </span>
           </div>
           <div className="rp-footer-social">
-            <a href="https://x.com/citytwin" aria-label="Follow CityTwin on X" className="rp-social-btn">
+            <a href="https://x.com/CityTwinApp" aria-label="Follow CityTwin on X" className="rp-social-btn" target="_blank" rel="noopener noreferrer">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
             </a>
-            <a href="https://instagram.com/citytwin" aria-label="Follow CityTwin on Instagram" className="rp-social-btn">
+            <a href="https://instagram.com/citytwinapp" aria-label="Follow CityTwin on Instagram" className="rp-social-btn" target="_blank" rel="noopener noreferrer">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="5" />
                 <path d="M16 11.4A4 4 0 1112.6 8 4 4 0 0116 11.4z" />
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
               </svg>
             </a>
-            <a href="https://facebook.com/citytwin" aria-label="Follow CityTwin on Facebook" className="rp-social-btn">
+            <a href="https://facebook.com/CityTwin" aria-label="Follow CityTwin on Facebook" className="rp-social-btn" target="_blank" rel="noopener noreferrer">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.7c0-.9.3-1.5 1.6-1.5H17V4.3c-.3 0-1.3-.1-2.5-.1-2.4 0-4 1.5-4 4.1v2.5H7.8V14h2.7v8h3z" />
               </svg>
@@ -574,7 +560,6 @@ export default function ResultsPage() {
         onClose={() => setAuthOpen(false)}
         heading="Unlock all matches"
         sub="See your #2 and #3 neighborhood matches. Free account, no credit card required."
-        onSignupSuccess={() => setUpgradeOpen(true)}
       />
       <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
       <ShareModal
@@ -1009,20 +994,6 @@ export default function ResultsPage() {
           padding: 4px 11px;
         }
 
-        .rp-social-proof {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: var(--bg);
-          border-radius: 10px;
-          padding: 10px 12px;
-          margin-bottom: 22px;
-          color: var(--slate-500);
-          font-size: 12px;
-        }
-        .rp-social-proof-icon {
-          color: var(--navy-soft);
-        }
 
         .rp-heads-up {
           display: flex;
@@ -1055,6 +1026,7 @@ export default function ResultsPage() {
         .rp-heads-up-text {
           flex: 1;
         }
+
 
         .rp-cta {
           max-width: 720px;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CTLogo from "@/components/CTLogo";
+import SignOutButton from "@/components/SignOutButton";
 
 export const metadata = {
   title: "Privacy Policy — CityTwin",
@@ -39,6 +40,7 @@ export default function PrivacyPage() {
           <Link href="/find" className="nav-cta">
             Start matching →
           </Link>
+          <SignOutButton className="nav-cta-outline" />
         </div>
       </nav>
 

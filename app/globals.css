@@ -81,6 +81,15 @@ body {
   transition: background .15s; white-space: nowrap;
 }
 .nav-cta:hover { background: var(--brand-700); }
+.nav-cta-outline {
+  display: inline-flex; align-items: center;
+  background: transparent; color: var(--brand-900);
+  border: 1.5px solid var(--brand-900);
+  border-radius: 100px; padding: 8px 18px;
+  font-size: .78rem; font-weight: 600; cursor: pointer; text-decoration: none;
+  transition: background .15s, color .15s; white-space: nowrap;
+}
+.nav-cta-outline:hover { background: var(--brand-900); color: var(--white); }
 .nav-back {
   color: var(--navy);
   text-decoration: none;

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { PriorityLabel } from '@/lib/types';
 import Link from 'next/link';
+import SignOutButton from '@/components/SignOutButton';
 import { useRouter } from 'next/navigation';
 import CTLogo from '@/components/CTLogo';
 // @ts-ignore - JS module with no type declarations
@@ -240,7 +241,10 @@ export default function FindPage() {
           <CTLogo size={32} />
           <span className="nav-brand-name">CityTwin</span>
         </Link>
-        <Link href="/" className="nav-back">← Home</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Link href="/" className="nav-back">← Home</Link>
+          <SignOutButton />
+        </div>
       </nav>
 
       <div className="progress-wrap">

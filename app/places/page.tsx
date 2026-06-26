@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
+import SignOutButton from '@/components/SignOutButton';
 import CTLogo from '@/components/CTLogo';
 import AuthModal from '@/components/AuthModal';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -373,7 +374,10 @@ export default function PlacesPage() {
           <CTLogo size={32} />
           <span className="nav-brand-name">CityTwin</span>
         </Link>
-        <Link href="/results" className="nav-back">← Back to results</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Link href="/results" className="nav-back">← Back to results</Link>
+          <SignOutButton />
+        </div>
       </nav>
 
       {/* ── PAGE HEADER ── */}

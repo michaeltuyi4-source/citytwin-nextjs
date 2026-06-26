@@ -8,7 +8,6 @@ interface AuthModalProps {
   onClose: () => void;
   heading?: string;
   sub?: string;
-  onSignupSuccess?: () => void;
 }
 
 export default function AuthModal({
@@ -16,14 +15,15 @@ export default function AuthModal({
   onClose,
   heading = 'Unlock all matches',
   sub = 'Create a free account — no credit card required.',
-  onSignupSuccess,
 }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('signup');
+  const [view, setView]         = useState<'form' | 'reset-request' | 'reset-sent'>('form');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
-  const [success, setSuccess]   = useState('');
   const [loading, setLoading]   = useState(false);
+  const [checkEmail, setCheckEmail]     = useState(false);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
 
   if (!isOpen) return null;
 
@@ -31,15 +31,18 @@ export default function AuthModal({
 
   async function handleSubmit() {
     setError('');
-    setSuccess('');
     if (!email || !password) { setError('Please enter your email and password.'); return; }
     if (password.length < 8)  { setError('Password must be at least 8 characters.');  return; }
 
     setLoading(true);
     try {
       if (activeTab === 'signup') {
-        const { error: err } = await supabase.auth.signUp({ email, password });
-        if (err) { setError(err.message); } else { setSuccess('Check your email to confirm your account.'); onSignupSuccess?.(); }
+        const { error: err } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/results` },
+        });
+        if (err) { setError(err.message); } else { setCheckEmail(true); }
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) setError(err.message);
@@ -52,6 +55,25 @@ export default function AuthModal({
     }
   }
 
+  async function handleResetRequest() {
+    setError('');
+    if (!email) { setError('Please enter your email address.'); return; }
+    setLoading(true);
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
+    });
+    setLoading(false);
+    if (err) { setError(err.message); } else { setView('reset-sent'); }
+  }
+
+  async function handleResend() {
+    setResendStatus('sending');
+    setError('');
+    const { error: err } = await supabase.auth.resend({ type: 'signup', email });
+    if (err) { setResendStatus('idle'); setError(err.message); }
+    else setResendStatus('sent');
+  }
+
   async function handleGoogle() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -60,6 +82,113 @@ export default function AuthModal({
   }
 
   const isSignup = activeTab === 'signup';
+
+  if (view === 'reset-sent') {
+    return (
+      <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="auth-modal-heading" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="modal-card" style={{ textAlign: 'center' }}>
+          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '8px auto 16px', display: 'block', color: 'var(--navy)' }} aria-hidden="true">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="M2 7l10 7 10-7" />
+          </svg>
+          <h2 className="modal-heading" id="auth-modal-heading">Check your inbox</h2>
+          <p className="modal-sub">We sent a password reset link to</p>
+          <p style={{ fontWeight: 600, color: 'var(--navy)', fontSize: 14, margin: '4px 0 16px' }}>{email}</p>
+          <p className="modal-sub" style={{ marginBottom: 24 }}>Click the link in the email to set a new password.</p>
+          <button
+            onClick={() => { setView('form'); setActiveTab('login'); setError(''); }}
+            style={{ background: 'none', border: 'none', color: 'var(--navy-soft)', fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+          >
+            Back to log in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'reset-request') {
+    return (
+      <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="auth-modal-heading" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="modal-card">
+          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+          <h2 className="modal-heading" id="auth-modal-heading">Reset your password</h2>
+          <p className="modal-sub" style={{ marginBottom: 22 }}>Enter your email and we&apos;ll send you a reset link.</p>
+          <div className="modal-form">
+            <div className="form-field">
+              <label className="form-label" htmlFor="auth-email">Email</label>
+              <input
+                className="form-input"
+                id="auth-email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleResetRequest(); }}
+              />
+            </div>
+            {error && <p className="form-error" role="alert" style={{ color: 'var(--red)' }}>{error}</p>}
+            <button className="btn-submit" onClick={handleResetRequest} disabled={loading}>
+              {loading ? 'Sending…' : 'Send reset link'}
+            </button>
+          </div>
+          <button
+            onClick={() => { setView('form'); setError(''); }}
+            style={{ display: 'block', margin: '16px auto 0', background: 'none', border: 'none', color: 'var(--navy-soft)', fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+          >
+            Back to log in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (checkEmail) {
+    return (
+      <div
+        className="modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-heading"
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        <div className="modal-card" style={{ textAlign: 'center' }}>
+          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '8px auto 16px', display: 'block', color: 'var(--navy)' }} aria-hidden="true">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="M2 7l10 7 10-7" />
+          </svg>
+          <h2 className="modal-heading" id="auth-modal-heading">Check your inbox</h2>
+          <p className="modal-sub">We sent a confirmation link to</p>
+          <p style={{ fontWeight: 600, color: 'var(--navy)', fontSize: 14, margin: '4px 0 16px' }}>{email}</p>
+          <p className="modal-sub" style={{ marginBottom: 24 }}>
+            Click the link in the email to confirm your account, then come back here to log in.
+          </p>
+          {error && <p className="form-error" role="alert" style={{ color: 'var(--red)', marginBottom: 12 }}>{error}</p>}
+          {resendStatus === 'sent'
+            ? <p style={{ color: 'var(--green)', fontSize: 13, marginBottom: 16 }}>Email resent — check your inbox.</p>
+            : (
+              <button
+                className="btn-submit"
+                onClick={handleResend}
+                disabled={resendStatus === 'sending'}
+                style={{ marginBottom: 16 }}
+              >
+                {resendStatus === 'sending' ? 'Sending…' : 'Resend confirmation email'}
+              </button>
+            )
+          }
+          <button
+            onClick={() => { setCheckEmail(false); setActiveTab('login'); setError(''); setResendStatus('idle'); }}
+            style={{ background: 'none', border: 'none', color: 'var(--navy-soft)', fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+          >
+            Already confirmed? Log in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -80,7 +209,7 @@ export default function AuthModal({
               key={tab}
               className={`modal-tab${activeTab === tab ? ' active' : ''}`}
               role="tab"
-              onClick={() => { setActiveTab(tab); setError(''); setSuccess(''); }}
+              onClick={() => { setActiveTab(tab); setError(''); setView('form'); }}
             >
               {tab === 'signup' ? 'Sign up' : 'Log in'}
             </button>
@@ -114,8 +243,16 @@ export default function AuthModal({
             />
           </div>
 
-          {error   && <p className="form-error" role="alert" style={{ color: 'var(--red)' }}>{error}</p>}
-          {success && <p className="form-error" role="alert" style={{ color: 'var(--green)' }}>{success}</p>}
+          {!isSignup && (
+            <button
+              onClick={() => { setView('reset-request'); setError(''); }}
+              style={{ background: 'none', border: 'none', color: 'var(--navy-soft)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0, marginTop: -4, textAlign: 'right', display: 'block', width: '100%' }}
+            >
+              Forgot password?
+            </button>
+          )}
+
+          {error && <p className="form-error" role="alert" style={{ color: 'var(--red)' }}>{error}</p>}
 
           <button
             className="btn-submit"
