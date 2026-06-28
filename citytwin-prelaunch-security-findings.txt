@@ -1,0 +1,173 @@
+CITYTWIN - PRE-LAUNCH SECURITY & HYGIENE FINDINGS
+Handoff for engineer review. Ordered by priority.
+Stack: Next.js 14.2 (App Router), Supabase (auth + DB), Stripe, Vercel.
+
+IMPORTANT CONTEXT
+- This came out of a read-only pre-launch scan. No fixes have been applied yet.
+- Items 1 and 2 are the priority: they are TWO INDEPENDENT ways a user can get
+  premium ("unlock all matches") WITHOUT paying. Both must be closed before
+  taking real payments. As it stands, the paywall does not actually hold.
+- Accepted / not a problem: lib/neighborhoods.js is intentionally kept as a
+  dormant fallback from the DB migration. Do NOT remove it now (scheduled for
+  later). Not dead code.
+- What is already GOOD (do not change): no secrets in code or git history;
+  Supabase service-role key is server-only (never NEXT_PUBLIC, never in browser);
+  Stripe webhook DOES verify the signature; checkout price is server-set;
+  Sentry is not capturing PII/secrets.
+
+
+====================================================================
+PRIORITY 1 (CRITICAL) [DONE] - Users can self-grant premium via Supabase RLS
+====================================================================
+WHAT'S WRONG:
+A logged-in user can give themselves premium for free. Using the public anon
+key plus their own normal login token, they can send:
+   PATCH /rest/v1/profiles?id=eq.<their-own-id>  with  { "tier": "premium" }
+This returned HTTP 200 and the change PERSISTED (confirmed by a service-role
+read). The profiles UPDATE policy (auth.uid() = id) has no column restriction,
+so the user can write their own `tier` (and `stripe_customer_id`). This is a
+direct, persistent revenue bypass that anyone with browser dev tools could do.
+
+WHERE: Supabase dashboard -> Authentication -> Policies -> profiles (UPDATE policy)
+
+FIX OPTIONS (engineer to choose; goal: only the server/webhook can write `tier`):
+  (a) Remove user UPDATE on profiles entirely, so only the service-role webhook
+      writes it. Simplest if users don't need to update any profile fields.
+  (b) Keep user UPDATE but restrict columns:
+      REVOKE UPDATE (tier, stripe_customer_id) ON profiles FROM authenticated;
+      (so users can update other profile fields but never tier/customer id).
+  (c) A trigger or WITH CHECK that blocks tier changes unless
+      auth.role() = 'service_role'.
+  Strongest separation: move `tier` to a service-role-only table.
+
+VERIFY AFTER FIX: repeat the PATCH above with a normal user token; it must be
+rejected (not 200), and tier must not change.
+
+ALSO CHECK WHILE IN THE DASHBOARD:
+saved_results policies should be scoped to auth.uid() = user_id for
+SELECT/UPDATE/DELETE (anon already blocked, good). Confirm a user cannot read or
+write another user's saved_results (cross-user access was unverified in the scan
+because only one test user was available).
+
+
+====================================================================
+PRIORITY 2 (HIGH) [DONE] - Premium content is shipped to the browser, only visually hidden
+====================================================================
+WHAT'S WRONG:
+All three neighborhood matches (including the two "locked" ones) are computed
+client-side and stored in the browser (localStorage + sessionStorage, key
+"citytwin_results"). The lock is only visual. A user can open
+localStorage.citytwin_results (or flip the client "unlocked" state) and read the
+full paid content without paying and without ever touching the database. This is
+a SECOND, independent free-premium path (separate from Priority 1).
+
+WHERE:
+  app/find/page.tsx:229-234   (computes all 3 matches, writes to local/sessionStorage)
+  app/results/page.tsx:79     (reads citytwin_results)
+  app/results/page.tsx:66-71  (unlocked flag - this part is correct: derived from
+                               server profiles.tier read; the problem is the data
+                               itself is already in the browser)
+
+FIX (architectural - needs care):
+Do not send locked match content to the browser. Options:
+  - Gate matches #2 and #3 behind a server route that checks the user's tier
+    (server-verified) before returning their data, OR
+  - Server-render / server-fetch the premium matches only when the user is
+    confirmed premium.
+The free match (#1) can still be client-side; only the paid matches must be
+withheld server-side until tier = premium is confirmed.
+
+VERIFY AFTER FIX: as a free (non-premium) user, confirm the locked matches'
+content is NOT present anywhere in localStorage/sessionStorage or network
+responses; it should only arrive after premium is confirmed.
+
+
+====================================================================
+PRIORITY 3 (HIGH) [DONE] - Next.js dependency has a HIGH advisory
+====================================================================
+WHAT'S WRONG:
+npm audit reports 0 critical, 4 high, 2 moderate. The runtime-relevant high is
+next@14.2.15. (The other highs are dev-only eslint toolchain: eslint-config-next,
+@next/eslint-plugin-next, glob.)
+
+FIX:
+Upgrade to the latest 14.2.x PATCH (non-breaking), NOT next@16 (npm audit
+suggests 16 but that's a semver-major and unnecessary). Then re-run npm audit.
+Note: the well-known Next.js middleware auth-bypass CVE does NOT apply here
+(there is no middleware.ts).
+
+VERIFY AFTER FIX: npm audit shows the next high resolved; app still builds and
+runs. Clear the 2 moderate advisories in the same pass if straightforward.
+
+
+====================================================================
+PRIORITY 4 (MEDIUM) [DONE] - Hardening (not exploits, but should fix soon)
+====================================================================
+4a. Checkout trusts a client-supplied userId.
+    app/api/checkout/route.ts:7 reads userId/email from the request body with no
+    server-side identity check. Not a free-premium exploit (payment still
+    required), but the endpoint should derive userId from the authenticated
+    server session (getUser / verify the JWT) instead of trusting the body.
+    No API route currently verifies the caller's identity server-side.
+
+4b. Webhook should also require payment was actually completed.
+    app/api/webhook/route.ts:28 checks only the event type, not
+    session.payment_status === 'paid'. Add that check to harden against
+    async/delayed payment methods granting premium prematurely.
+
+
+====================================================================
+PRIORITY 5 (LOW) - Hygiene / cleanup (can wait)
+====================================================================
+5a. [DONE] Remove two debug console.logs (no secrets/PII, just noise):
+    app/find/page.tsx:167     ("[CityTwin] Restored city..." - logs a city name)
+    app/results/page.tsx:200  ("[gate] handleTabClick" - logs session/unlocked booleans)
+    (Other console.error calls are legitimate operational logging - leave them:
+     lib/neighborhoods-db.ts:139,148, components/AuthModal.tsx:56)
+
+5b. [DONE] Add try/catch + input validation to the checkout route.
+    app/api/checkout/route.ts currently has none, so a Stripe failure yields a
+    generic Next 500. No data leak, but not a graceful JSON error.
+
+5c. scripts/backfill-scores.ts (one-time score backfill, already complete):
+    Not imported by the app, lives outside the bundle, reads service-role key
+    from env. RECOMMEND KEEP for reference (documents how score columns were
+    populated). Optionally move to an archive/ folder later. No action required.
+
+5d. .env.local.example is tracked but contains only blank placeholders (safe).
+    .env.local itself is correctly gitignored and never committed. No action.
+
+
+====================================================================
+NOTES ON WHAT WAS VERIFIED CLEAN (no action needed)
+====================================================================
+- Secrets: no hardcoded secrets in code or in git history (scanned all commits
+  for sk_, whsec_, sntrys_, AIza..., service-role JWTs). Clean.
+- Service-role key only in: app/api/webhook/route.ts:9, scripts/backfill-scores.ts:102
+  (both server-side). Never NEXT_PUBLIC, never in client code.
+- Client uses anon key (lib/supabase.ts:12, createBrowserClient).
+- NEXT_PUBLIC_ vars are all non-sensitive: SUPABASE_URL, SUPABASE_ANON_KEY,
+  MAPBOX_TOKEN, APP_URL, NEIGHBORHOOD_SOURCE, SENTRY_DSN, STRIPE_PUBLISHABLE_KEY.
+- Stripe webhook verifies signature (stripe.webhooks.constructEvent) at
+  app/api/webhook/route.ts:19-23; fake POSTs rejected with generic 400.
+- Checkout price is server-side via STRIPE_LIFETIME_PRICE_ID
+  (app/api/checkout/route.ts:11); client cannot set the amount.
+- No stack traces / DB structure / internals leaked to clients.
+- Sentry not capturing PII/secrets (no sendDefaultPii, no request-body capture).
+- Sentry test scaffolding removed; only checkout/health/webhook API routes exist.
+- lib/neighborhoods.js: accepted dormant fallback, not flagged.
+
+
+====================================================================
+SUGGESTED FIX ORDER
+====================================================================
+1. Priority 1 (RLS tier lockdown) - dashboard policy change. Closes the easiest
+   free-premium exploit. Do first.
+2. Priority 2 (server-gate premium content) - architectural; closes the second
+   free-premium path. Needs the most care/testing.
+3. Priority 3 (Next.js patch) - quick dependency bump + re-audit.
+4. Priority 4 (checkout identity, webhook payment_status) - hardening.
+5. Priority 5 (console.logs, try/catch, etc.) - hygiene.
+
+Items 1 and 2 are both "get premium without paying." Neither should remain open
+when real payments go live.
