@@ -64,7 +64,6 @@ export default function AboutPage() {
           <Link href="/find" className="nav-cta">
             Start matching →
           </Link>
-          <SignOutButton className="nav-cta-outline" />
         </div>
 
         <button
