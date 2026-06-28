@@ -332,9 +332,6 @@ export default function FindPage() {
 
     const savedCity = localStorage.getItem("citytwin_city");
     if (savedCity) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("[CityTwin] Restored city from localStorage:", savedCity);
-      }
       setSelectedCity(savedCity);
     }
 
@@ -419,10 +416,11 @@ export default function FindPage() {
       priorities,
       LIFESTYLE_CATEGORIES,
     );
-    sessionStorage.setItem("citytwin_results", JSON.stringify(results));
+    const freeResult = results.slice(0, 1); // Only match #1 stored client-side; #2/#3 are server-gated
+    sessionStorage.setItem("citytwin_results", JSON.stringify(freeResult));
     sessionStorage.setItem("citytwin_city", selectedCity!);
     sessionStorage.setItem("citytwin_priorities", JSON.stringify(priorities));
-    localStorage.setItem("citytwin_results", JSON.stringify(results));
+    localStorage.setItem("citytwin_results", JSON.stringify(freeResult));
     localStorage.setItem("citytwin_city", selectedCity!);
     localStorage.setItem("citytwin_priorities", JSON.stringify(priorities));
     router.push("/results");

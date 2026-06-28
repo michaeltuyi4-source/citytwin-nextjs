@@ -10,7 +10,6 @@ import Image from "next/image";
 import CTLogo from "@/components/CTLogo";
 import NavAuth from "@/components/NavAuth";
 import AuthModal from "@/components/AuthModal";
-import SignOutButton from "@/components/SignOutButton";
 import UpgradeModal from "@/components/UpgradeModal";
 import ShareModal from "@/components/ShareModal";
 import { createClient } from "@/lib/supabase";
@@ -60,6 +59,7 @@ export default function ResultsPage() {
   const [hydrated, setHydrated] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const premiumFetchedRef = useRef(false);
 
   const supabase = createClient();
 
@@ -208,11 +208,54 @@ export default function ResultsPage() {
         setSession(null);
         setUpgradeOpen(false);
         setUnlocked(false);
+        setResults((prev) => prev.slice(0, 1));
+        premiumFetchedRef.current = false;
       }
     });
 
     return () => subscription.unsubscribe();
   }, [handleSession, supabase.auth]);
+
+  // Fetch premium matches (#2 and #3) from the server once the user is confirmed premium
+  useEffect(() => {
+    if (!unlocked || premiumFetchedRef.current) return;
+    premiumFetchedRef.current = true;
+
+    async function fetchPremiumMatches() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const city =
+        sessionStorage.getItem("citytwin_city") ||
+        localStorage.getItem("citytwin_city");
+      const priRaw =
+        sessionStorage.getItem("citytwin_priorities") ||
+        localStorage.getItem("citytwin_priorities");
+      if (!city || !priRaw) return;
+
+      try {
+        const res = await fetch("/api/premium-matches", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ city, priorities: JSON.parse(priRaw) }),
+        });
+        if (!res.ok) return;
+        const { matches } = await res.json();
+        if (Array.isArray(matches) && matches.length > 0) {
+          setResults((prev) => [prev[0], ...matches]);
+        }
+      } catch {
+        // Silently fail — match #1 still visible
+      }
+    }
+
+    fetchPremiumMatches();
+  }, [unlocked, supabase]);
 
   // Derived values
   const activeMatch = results[activeIdx];
@@ -227,11 +270,6 @@ export default function ResultsPage() {
 
   // Handlers
   function handleTabClick(idx: number) {
-    console.log("[gate] handleTabClick", {
-      idx,
-      hasSession: !!session,
-      unlocked,
-    });
     if (idx > 0 && !unlocked) {
       if (session) {
         setUpgradeOpen(true);
@@ -369,13 +407,12 @@ export default function ResultsPage() {
         <div className="rp-rail" role="tablist" aria-label="Your matches">
           {results.map((r, i) => {
             const isActive = i === activeIdx;
-            const isLocked = i > 0 && !unlocked;
             return (
               <button
                 key={r.id}
                 role="tab"
                 aria-selected={isActive}
-                className={`rp-rail-card${isActive ? " rp-rail-card-active" : ""}${isLocked ? " rp-rail-card-locked" : ""}`}
+                className={`rp-rail-card${isActive ? " rp-rail-card-active" : ""}`}
                 onClick={() => handleTabClick(i)}
               >
                 <div className="rp-rail-rank">
@@ -383,7 +420,25 @@ export default function ResultsPage() {
                 </div>
                 <div className="rp-rail-name">{r.name}</div>
                 <div className="rp-rail-score">
-                  {isLocked && (
+                  <span>{r.matchPercent}%</span>
+                </div>
+              </button>
+            );
+          })}
+          {!unlocked &&
+            Array.from({ length: 3 - results.length }).map((_, i) => {
+              const idx = results.length + i;
+              return (
+                <button
+                  key={`locked-${idx}`}
+                  role="tab"
+                  aria-selected={false}
+                  className="rp-rail-card rp-rail-card-locked"
+                  onClick={() => handleTabClick(idx)}
+                >
+                  <div className="rp-rail-rank">#{idx + 1}</div>
+                  <div className="rp-rail-name">Locked</div>
+                  <div className="rp-rail-score">
                     <svg
                       width="12"
                       height="12"
@@ -398,12 +453,10 @@ export default function ResultsPage() {
                       <rect x="4" y="11" width="16" height="10" rx="2" />
                       <path d="M8 11V7a4 4 0 018 0v4" />
                     </svg>
-                  )}
-                  <span>{r.matchPercent}%</span>
-                </div>
-              </button>
-            );
-          })}
+                  </div>
+                </button>
+              );
+            })}
         </div>
       </div>
 
