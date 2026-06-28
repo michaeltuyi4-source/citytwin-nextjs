@@ -1,23 +1,27 @@
-'use client';
+"use client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import CTLogo from '@/components/CTLogo';
-import NavAuth from '@/components/NavAuth';
-import AuthModal from '@/components/AuthModal';
-import UpgradeModal from '@/components/UpgradeModal';
-import ShareModal from '@/components/ShareModal';
-import { createClient } from '@/lib/supabase';
-import { getCityPhoto, getCityLabel } from '@/lib/photos';
-import { getCategoryIcon } from '@/lib/categoryIcons';
-import type { MatchResult, PhraseChip, Gap } from '@/lib/types';
+import { useEffect, useRef, useState, useCallback } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import CTLogo from "@/components/CTLogo";
+import NavAuth from "@/components/NavAuth";
+import AuthModal from "@/components/AuthModal";
+import UpgradeModal from "@/components/UpgradeModal";
+import ShareModal from "@/components/ShareModal";
+import { createClient } from "@/lib/supabase";
+import { getCityPhoto, getCityLabel } from "@/lib/photos";
+import { getCategoryIcon } from "@/lib/categoryIcons";
+import type { MatchResult, PhraseChip, Gap } from "@/lib/types";
 
-function useCountUp(target: number, duration = 900, triggerKey: unknown = null) {
+function useCountUp(
+  target: number,
+  duration = 900,
+  triggerKey: unknown = null,
+) {
   const [value, setValue] = useState(0);
 
   useEffect(() => {
@@ -40,19 +44,19 @@ function useCountUp(target: number, duration = 900, triggerKey: unknown = null) 
 
 export default function ResultsPage() {
   const router = useRouter();
-  const [results, setResults]         = useState<MatchResult[]>([]);
-  const [priorities, setPriorities]   = useState<Record<string, string>>({});
-  const [activeIdx, setActiveIdx]     = useState(0);
-  const [cityKey, setCityKey]         = useState('');
-  const [mounted, setMounted]         = useState(false);
-  const [authOpen, setAuthOpen]             = useState(false);
-  const [upgradeOpen, setUpgradeOpen]       = useState(false);
-  const [unlocked, setUnlocked]             = useState(false);
-  const [session, setSession]               = useState<{ user: { id: string } } | null>(null);
+  const [results, setResults] = useState<MatchResult[]>([]);
+  const [priorities, setPriorities] = useState<Record<string, string>>({});
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [cityKey, setCityKey] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [session, setSession] = useState<{ user: { id: string } } | null>(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [shareOpen, setShareOpen]                 = useState(false);
-  const [pollTimedOut, setPollTimedOut]           = useState(false);
-  const [hydrated, setHydrated]                   = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const premiumFetchedRef = useRef(false);
@@ -60,26 +64,35 @@ export default function ResultsPage() {
   const supabase = createClient();
 
   // Session check
-  const handleSession = useCallback(async (session: { user: { id: string } } | null) => {
-    if (!session) return;
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tier')
-      .eq('id', session.user.id)
-      .single();
+  const handleSession = useCallback(
+    async (session: { user: { id: string } } | null) => {
+      if (!session) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("tier")
+        .eq("id", session.user.id)
+        .single();
 
-    if (profile?.tier === 'premium') {
-      setUnlocked(true);
-    }
-  }, [supabase]);
+      if (profile?.tier === "premium") {
+        setUnlocked(true);
+      }
+    },
+    [supabase],
+  );
 
   // Storage hydration with runtime validation
   useEffect(() => {
     setMounted(true);
 
-    const raw     = sessionStorage.getItem('citytwin_results')    || localStorage.getItem('citytwin_results');
-    const rawPri  = sessionStorage.getItem('citytwin_priorities') || localStorage.getItem('citytwin_priorities');
-    const rawCity = sessionStorage.getItem('citytwin_city')       || localStorage.getItem('citytwin_city');
+    const raw =
+      sessionStorage.getItem("citytwin_results") ||
+      localStorage.getItem("citytwin_results");
+    const rawPri =
+      sessionStorage.getItem("citytwin_priorities") ||
+      localStorage.getItem("citytwin_priorities");
+    const rawCity =
+      sessionStorage.getItem("citytwin_city") ||
+      localStorage.getItem("citytwin_city");
 
     if (rawCity) setCityKey(rawCity);
     if (rawPri) setPriorities(JSON.parse(rawPri));
@@ -87,20 +100,27 @@ export default function ResultsPage() {
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        const valid = Array.isArray(parsed) && parsed.every((m: unknown) =>
-          typeof m === 'object' && m !== null &&
-          'id' in m && 'name' in m && 'insightLine' in m && 'phraseChips' in m
-        );
+        const valid =
+          Array.isArray(parsed) &&
+          parsed.every(
+            (m: unknown) =>
+              typeof m === "object" &&
+              m !== null &&
+              "id" in m &&
+              "name" in m &&
+              "insightLine" in m &&
+              "phraseChips" in m,
+          );
         if (valid) {
           setResults(parsed as MatchResult[]);
         } else {
-          sessionStorage.removeItem('citytwin_results');
-          localStorage.removeItem('citytwin_results');
-          router.push('/find');
+          sessionStorage.removeItem("citytwin_results");
+          localStorage.removeItem("citytwin_results");
+          router.push("/find");
           return;
         }
       } catch {
-        router.push('/find');
+        router.push("/find");
         return;
       }
     }
@@ -109,16 +129,16 @@ export default function ResultsPage() {
 
     // If returning from Stripe success, poll tier until webhook updates it
     const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
+    if (params.get("success") === "true") {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         supabase
-          .from('profiles')
-          .select('tier')
-          .eq('id', session.user.id)
+          .from("profiles")
+          .select("tier")
+          .eq("id", session.user.id)
           .single()
           .then(({ data: profile }) => {
-            if (profile?.tier === 'premium') {
+            if (profile?.tier === "premium") {
               setUnlocked(true);
               return;
             }
@@ -128,16 +148,19 @@ export default function ResultsPage() {
             pollRef.current = setInterval(async () => {
               attempts++;
               const { data: p } = await supabase
-                .from('profiles')
-                .select('tier')
-                .eq('id', session.user.id)
+                .from("profiles")
+                .select("tier")
+                .eq("id", session.user.id)
                 .single();
-              if (p?.tier === 'premium') {
+              if (p?.tier === "premium") {
                 setUnlocked(true);
                 setPaymentProcessing(false);
                 clearInterval(pollRef.current!);
                 pollRef.current = null;
-                toast.success('Your matches are unlocked!', { description: 'Welcome to CityTwin. All three neighborhoods are now yours.' });
+                toast.success("Your matches are unlocked!", {
+                  description:
+                    "Welcome to CityTwin. All three neighborhoods are now yours.",
+                });
               } else if (attempts >= 15) {
                 clearInterval(pollRef.current!);
                 pollRef.current = null;
@@ -157,29 +180,35 @@ export default function ResultsPage() {
   // Auth gate
   useEffect(() => {
     async function applyGate() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setSession(session);
       if (session) await handleSession(session);
     }
     applyGate();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       // INITIAL_SESSION fires on a hard reload that restores a persisted session
       // (SIGNED_IN only fires on a fresh interactive login). Handle both so the
       // premium tier is re-read and the gate unlocks on reload, not just on login.
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
         setSession(session);
         setAuthOpen(false);
         // Defer the tier read out of the callback. Calling Supabase (the
         // profiles query) directly inside onAuthStateChange deadlocks on the
         // INITIAL_SESSION path, because the callback runs while GoTrue holds
         // its auth lock. setTimeout releases the lock first.
-        setTimeout(() => { handleSession(session); }, 0);
-      } else if (event === 'SIGNED_OUT') {
+        setTimeout(() => {
+          handleSession(session);
+        }, 0);
+      } else if (event === "SIGNED_OUT") {
         setSession(null);
         setUpgradeOpen(false);
         setUnlocked(false);
-        setResults(prev => prev.slice(0, 1));
+        setResults((prev) => prev.slice(0, 1));
         premiumFetchedRef.current = false;
       }
     });
@@ -193,26 +222,32 @@ export default function ResultsPage() {
     premiumFetchedRef.current = true;
 
     async function fetchPremiumMatches() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) return;
 
-      const city = sessionStorage.getItem('citytwin_city') || localStorage.getItem('citytwin_city');
-      const priRaw = sessionStorage.getItem('citytwin_priorities') || localStorage.getItem('citytwin_priorities');
+      const city =
+        sessionStorage.getItem("citytwin_city") ||
+        localStorage.getItem("citytwin_city");
+      const priRaw =
+        sessionStorage.getItem("citytwin_priorities") ||
+        localStorage.getItem("citytwin_priorities");
       if (!city || !priRaw) return;
 
       try {
-        const res = await fetch('/api/premium-matches', {
-          method: 'POST',
+        const res = await fetch("/api/premium-matches", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ city, priorities: JSON.parse(priRaw) }),
         });
         if (!res.ok) return;
         const { matches } = await res.json();
         if (Array.isArray(matches) && matches.length > 0) {
-          setResults(prev => [prev[0], ...matches]);
+          setResults((prev) => [prev[0], ...matches]);
         }
       } catch {
         // Silently fail — match #1 still visible
@@ -224,13 +259,13 @@ export default function ResultsPage() {
 
   // Derived values
   const activeMatch = results[activeIdx];
-  const cityLabel   = getCityLabel(cityKey);
-  const cityPhoto   = getCityPhoto(cityKey);
+  const cityLabel = getCityLabel(cityKey);
+  const cityPhoto = getCityPhoto(cityKey);
 
   const animatedScore = useCountUp(
     activeMatch?.matchPercent ?? 0,
     900,
-    activeIdx
+    activeIdx,
   );
 
   // Handlers
@@ -248,14 +283,14 @@ export default function ResultsPage() {
 
   function handleChangePriorities(e: React.MouseEvent) {
     e.preventDefault();
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('citytwin_returning', 'true');
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("citytwin_returning", "true");
     }
-    router.push('/find');
+    router.push("/find");
   }
 
   function handleFindPlaces() {
-    router.push('/places');
+    router.push("/places");
   }
 
   function handleShare() {
@@ -272,17 +307,36 @@ export default function ResultsPage() {
   if (results.length === 0) {
     return (
       <>
-        <nav style={{ background: 'var(--white)', borderBottom: '1px solid var(--blue-pale)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: 62 }}>
+        <nav
+          style={{
+            background: "var(--white)",
+            borderBottom: "1px solid var(--blue-pale)",
+            padding: "14px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            height: 62,
+          }}
+        >
           <Link href="/" className="nav-brand">
             <CTLogo size={32} />
             <span className="nav-brand-name">CityTwin</span>
           </Link>
         </nav>
-        <div style={{ marginTop: 62, padding: '60px 24px', textAlign: 'center' }}>
+        <div
+          style={{ marginTop: 62, padding: "60px 24px", textAlign: "center" }}
+        >
           <div className="no-results">
             <h2>No results found</h2>
             <p>Something went wrong. Let&apos;s try again.</p>
-            <Link href="/find" className="btn-primary">Start over</Link>
+            <Link href="/find" className="btn-primary">
+              Start over
+            </Link>
           </div>
         </div>
       </>
@@ -291,7 +345,6 @@ export default function ResultsPage() {
 
   return (
     <div className="rp-root">
-
       <div className="rp-bg" aria-hidden="true" />
 
       <nav className="rp-nav">
@@ -318,14 +371,24 @@ export default function ResultsPage() {
               fill
               priority
               sizes="100vw"
-              style={{ objectFit: 'cover' }}
+              style={{ objectFit: "cover" }}
             />
           )}
           <div className="rp-hero-overlay" aria-hidden="true" />
         </div>
         <div className="rp-hero-content">
           <div className="rp-city-pill">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
               <circle cx="12" cy="10" r="3" />
             </svg>
@@ -349,11 +412,11 @@ export default function ResultsPage() {
                 key={r.id}
                 role="tab"
                 aria-selected={isActive}
-                className={`rp-rail-card${isActive ? ' rp-rail-card-active' : ''}`}
+                className={`rp-rail-card${isActive ? " rp-rail-card-active" : ""}`}
                 onClick={() => handleTabClick(i)}
               >
                 <div className="rp-rail-rank">
-                  {i === 0 ? 'Best match' : `#${i + 1}`}
+                  {i === 0 ? "Best match" : `#${i + 1}`}
                 </div>
                 <div className="rp-rail-name">{r.name}</div>
                 <div className="rp-rail-score">
@@ -362,48 +425,96 @@ export default function ResultsPage() {
               </button>
             );
           })}
-          {!unlocked && Array.from({ length: 3 - results.length }).map((_, i) => {
-            const idx = results.length + i;
-            return (
-              <button
-                key={`locked-${idx}`}
-                role="tab"
-                aria-selected={false}
-                className="rp-rail-card rp-rail-card-locked"
-                onClick={() => handleTabClick(idx)}
-              >
-                <div className="rp-rail-rank">#{idx + 1}</div>
-                <div className="rp-rail-name">Locked</div>
-                <div className="rp-rail-score">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="4" y="11" width="16" height="10" rx="2" />
-                    <path d="M8 11V7a4 4 0 018 0v4" />
-                  </svg>
-                </div>
-              </button>
-            );
-          })}
+          {!unlocked &&
+            Array.from({ length: 3 - results.length }).map((_, i) => {
+              const idx = results.length + i;
+              return (
+                <button
+                  key={`locked-${idx}`}
+                  role="tab"
+                  aria-selected={false}
+                  className="rp-rail-card rp-rail-card-locked"
+                  onClick={() => handleTabClick(idx)}
+                >
+                  <div className="rp-rail-rank">#{idx + 1}</div>
+                  <div className="rp-rail-name">Locked</div>
+                  <div className="rp-rail-score">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="4" y="11" width="16" height="10" rx="2" />
+                      <path d="M8 11V7a4 4 0 018 0v4" />
+                    </svg>
+                  </div>
+                </button>
+              );
+            })}
         </div>
       </div>
 
       {(paymentProcessing || pollTimedOut) && !unlocked && (
-        <div style={{ maxWidth: 720, margin: '12px auto 0', padding: '0 20px' }}>
-          <div style={{ background: 'rgba(196,123,43,0.08)', border: '1px solid rgba(196,123,43,0.25)', borderRadius: 12, padding: '14px 18px', fontSize: 13, color: 'var(--navy)', lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          style={{ maxWidth: 720, margin: "12px auto 0", padding: "0 20px" }}
+        >
+          <div
+            style={{
+              background: "rgba(196,123,43,0.08)",
+              border: "1px solid rgba(196,123,43,0.25)",
+              borderRadius: 12,
+              padding: "14px 18px",
+              fontSize: 13,
+              color: "var(--navy)",
+              lineHeight: 1.5,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
             {paymentProcessing && (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ flexShrink: 0, animation: 'rp-spin 0.9s linear infinite' }}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                style={{
+                  flexShrink: 0,
+                  animation: "rp-spin 0.9s linear infinite",
+                }}
+              >
                 <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".25" />
                 <path d="M21 12a9 9 0 00-9-9" />
               </svg>
             )}
             <span style={{ flex: 1 }}>
               {paymentProcessing
-                ? 'Unlocking your matches\u2026 this takes just a moment.'
-                : 'Taking longer than expected.'}
+                ? "Unlocking your matches\u2026 this takes just a moment."
+                : "Taking longer than expected."}
             </span>
             {pollTimedOut && (
               <button
                 onClick={() => window.location.reload()}
-                style={{ flexShrink: 0, background: 'var(--amber)', color: 'white', border: 0, borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                style={{
+                  flexShrink: 0,
+                  background: "var(--amber)",
+                  color: "white",
+                  border: 0,
+                  borderRadius: 8,
+                  padding: "6px 14px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
               >
                 Refresh
               </button>
@@ -414,7 +525,6 @@ export default function ResultsPage() {
 
       {activeMatch && (
         <article className="rp-card" key={activeIdx}>
-
           <div className="rp-card-photo">
             {mounted && (
               <Image
@@ -422,19 +532,23 @@ export default function ResultsPage() {
                 alt={`Street scene in ${activeMatch.name}`}
                 fill
                 sizes="(max-width: 700px) 100vw, 600px"
-                style={{ objectFit: 'cover' }}
+                style={{ objectFit: "cover" }}
               />
             )}
             <div className="rp-card-photo-overlay" aria-hidden="true" />
-            <div className={`rp-rank-badge${activeIdx === 0 ? ' rp-rank-badge-best' : ''}`}>
-              {activeIdx === 0 ? 'Best match' : `#${activeIdx + 1} match`}
+            <div
+              className={`rp-rank-badge${activeIdx === 0 ? " rp-rank-badge-best" : ""}`}
+            >
+              {activeIdx === 0 ? "Best match" : `#${activeIdx + 1} match`}
             </div>
             <div className="rp-card-photo-bottom">
               <div className="rp-card-photo-text">
                 <h2 className="rp-card-name">{activeMatch.name}</h2>
                 <p className="rp-card-tagline">{activeMatch.tagline}</p>
               </div>
-              <div className={`rp-score-ring${activeIdx === 0 ? ' rp-score-ring-best' : ''}`}>
+              <div
+                className={`rp-score-ring${activeIdx === 0 ? " rp-score-ring-best" : ""}`}
+              >
                 <span className="rp-score-ring-value">{animatedScore}%</span>
                 <span className="rp-score-ring-label">match</span>
               </div>
@@ -442,23 +556,22 @@ export default function ResultsPage() {
           </div>
 
           <div className="rp-card-body">
-
-            <div className="rp-insight">
-              {activeMatch.insightLine}
-            </div>
+            <div className="rp-insight">{activeMatch.insightLine}</div>
 
             {activeMatch.phraseChips && activeMatch.phraseChips.length > 0 && (
               <section className="rp-section">
                 <h3 className="rp-section-label">How it fits how you live</h3>
                 <div className="rp-chips">
-                  {activeMatch.phraseChips.map((chip: PhraseChip, i: number) => (
-                    <div key={i} className={`rp-chip rp-chip-${chip.weight}`}>
-                      <span className="rp-chip-icon" aria-hidden="true">
-                        {getCategoryIcon(chip.category)}
-                      </span>
-                      <span className="rp-chip-text">{chip.phrase}</span>
-                    </div>
-                  ))}
+                  {activeMatch.phraseChips.map(
+                    (chip: PhraseChip, i: number) => (
+                      <div key={i} className={`rp-chip rp-chip-${chip.weight}`}>
+                        <span className="rp-chip-icon" aria-hidden="true">
+                          {getCategoryIcon(chip.category)}
+                        </span>
+                        <span className="rp-chip-text">{chip.phrase}</span>
+                      </div>
+                    ),
+                  )}
                 </div>
               </section>
             )}
@@ -470,7 +583,9 @@ export default function ResultsPage() {
               </div>
               <div className="rp-stat">
                 <div className="rp-stat-label">Walk score</div>
-                <div className="rp-stat-value">{activeMatch.walkScore} / 100</div>
+                <div className="rp-stat-value">
+                  {activeMatch.walkScore} / 100
+                </div>
               </div>
             </section>
 
@@ -478,17 +593,26 @@ export default function ResultsPage() {
               <section className="rp-section">
                 <h3 className="rp-section-label">What makes it stand out</h3>
                 <ul className="rp-bullet-list">
-                  {activeMatch.highlights.slice(0, 4).map((h: string, i: number) => (
-                    <li key={i} className="rp-bullet-row">
-                      <span className="rp-bullet-icon" aria-hidden="true">
-                        <svg width="16" height="16" viewBox="0 0 16 16">
-                          <circle cx="8" cy="8" r="8" fill="#EAF5EF" />
-                          <path d="M4.5 8.3l2.2 2.2L11.6 5.6" stroke="#2A7A5A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                        </svg>
-                      </span>
-                      <span className="rp-bullet-text">{h}</span>
-                    </li>
-                  ))}
+                  {activeMatch.highlights
+                    .slice(0, 4)
+                    .map((h: string, i: number) => (
+                      <li key={i} className="rp-bullet-row">
+                        <span className="rp-bullet-icon" aria-hidden="true">
+                          <svg width="16" height="16" viewBox="0 0 16 16">
+                            <circle cx="8" cy="8" r="8" fill="#EAF5EF" />
+                            <path
+                              d="M4.5 8.3l2.2 2.2L11.6 5.6"
+                              stroke="#2A7A5A"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              fill="none"
+                            />
+                          </svg>
+                        </span>
+                        <span className="rp-bullet-text">{h}</span>
+                      </li>
+                    ))}
                 </ul>
               </section>
             )}
@@ -498,7 +622,9 @@ export default function ResultsPage() {
                 <h3 className="rp-section-label">People who land here</h3>
                 <div className="rp-personas">
                   {activeMatch.bestFor.map((p: string, i: number) => (
-                    <span key={i} className="rp-persona">{p}</span>
+                    <span key={i} className="rp-persona">
+                      {p}
+                    </span>
                   ))}
                 </div>
               </section>
@@ -509,7 +635,10 @@ export default function ResultsPage() {
                 <h3 className="rp-section-label">Worth a heads up</h3>
                 <div className="rp-heads-up">
                   {activeMatch.gaps.slice(0, 4).map((g: Gap, i: number) => (
-                    <div key={i} className={`rp-heads-up-item${g.isMustHave ? ' rp-heads-up-item-must' : ''}`}>
+                    <div
+                      key={i}
+                      className={`rp-heads-up-item${g.isMustHave ? " rp-heads-up-item-must" : ""}`}
+                    >
                       <span className="rp-heads-up-dot" aria-hidden="true" />
                       <span className="rp-heads-up-text">{g.text}</span>
                     </div>
@@ -517,16 +646,18 @@ export default function ResultsPage() {
                 </div>
               </section>
             )}
-
           </div>
         </article>
       )}
 
       {activeMatch && (
         <section className="rp-cta">
-          <h3 className="rp-cta-title">Ready to see {activeMatch.name} up close?</h3>
+          <h3 className="rp-cta-title">
+            Ready to see {activeMatch.name} up close?
+          </h3>
           <p className="rp-cta-sub">
-            Find the coffee shops, parks, and gyms that match your style, right inside {activeMatch.name}.
+            Find the coffee shops, parks, and gyms that match your style, right
+            inside {activeMatch.name}.
           </p>
           <div className="rp-cta-actions">
             <button className="rp-btn-primary" onClick={handleFindPlaces}>
@@ -542,27 +673,65 @@ export default function ResultsPage() {
       <footer className="rp-footer">
         <div className="rp-footer-inner">
           <div className="rp-footer-social">
-            <a href="https://x.com/CityTwinApp" target="_blank" rel="noopener noreferrer" aria-label="Follow CityTwin on X" className="rp-social-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <a
+              href="https://x.com/CityTwinApp"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow CityTwin on X"
+              className="rp-social-btn"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
             </a>
-            <a href="https://instagram.com/citytwinapp" target="_blank" rel="noopener noreferrer" aria-label="Follow CityTwin on Instagram" className="rp-social-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <a
+              href="https://instagram.com/citytwinapp"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow CityTwin on Instagram"
+              className="rp-social-btn"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <rect x="3" y="3" width="18" height="18" rx="5" />
                 <path d="M16 11.4A4 4 0 1112.6 8 4 4 0 0116 11.4z" />
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
               </svg>
             </a>
-            <a href="https://facebook.com/Citytwinapp" target="_blank" rel="noopener noreferrer" aria-label="Follow CityTwin on Facebook" className="rp-social-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <a
+              href="https://facebook.com/Citytwinapp"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow CityTwin on Facebook"
+              className="rp-social-btn"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
                 <path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.7c0-.9.3-1.5 1.6-1.5H17V4.3c-.3 0-1.3-.1-2.5-.1-2.4 0-4 1.5-4 4.1v2.5H7.8V14h2.7v8h3z" />
               </svg>
             </a>
           </div>
         </div>
         <div className="rp-footer-legal">
-          CityTwin &copy; 2026 &middot; <Link href="/privacy">Privacy</Link> &middot; <Link href="/terms">Terms</Link>
+          CityTwin &copy; 2026 &middot; <Link href="/privacy">Privacy</Link>{" "}
+          &middot; <Link href="/terms">Terms</Link>
         </div>
       </footer>
 
@@ -571,13 +740,15 @@ export default function ResultsPage() {
         onClose={() => setAuthOpen(false)}
         heading="Unlock all matches"
         sub="See your #2 and #3 neighborhood matches. Free account, no credit card required."
-        onSignupSuccess={() => setUpgradeOpen(true)}
       />
-      <UpgradeModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      <UpgradeModal
+        isOpen={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+      />
       <ShareModal
         isOpen={shareOpen}
         onClose={() => setShareOpen(false)}
-        neighborhoodName={activeMatch?.name ?? ''}
+        neighborhoodName={activeMatch?.name ?? ""}
         cityLabel={cityLabel}
         matchPercent={activeMatch?.matchPercent ?? 0}
       />
@@ -586,7 +757,7 @@ export default function ResultsPage() {
         .rp-root {
           position: relative;
           min-height: 100vh;
-          font-family: var(--font-body), 'DM Sans', system-ui, sans-serif;
+          font-family: var(--font-body), "DM Sans", system-ui, sans-serif;
           color: var(--slate);
         }
 
@@ -594,7 +765,12 @@ export default function ResultsPage() {
           position: fixed;
           inset: 0;
           z-index: -1;
-          background: linear-gradient(180deg, #ECF1F8 0%, #F5F1E9 55%, #FBF6EE 100%);
+          background: linear-gradient(
+            180deg,
+            #ecf1f8 0%,
+            #f5f1e9 55%,
+            #fbf6ee 100%
+          );
         }
 
         .rp-nav {
@@ -633,7 +809,9 @@ export default function ResultsPage() {
           font-size: 13px;
           font-weight: 500;
           cursor: pointer;
-          transition: border-color 0.15s ease, color 0.15s ease;
+          transition:
+            border-color 0.15s ease,
+            color 0.15s ease;
         }
         .rp-nav-cta:hover {
           border-color: var(--navy-mid);
@@ -646,7 +824,9 @@ export default function ResultsPage() {
           overflow: hidden;
         }
         @media (min-width: 720px) {
-          .rp-hero { height: 240px; }
+          .rp-hero {
+            height: 240px;
+          }
         }
         .rp-hero-photo-wrap {
           position: absolute;
@@ -655,7 +835,12 @@ export default function ResultsPage() {
         .rp-hero-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(180deg, rgba(14, 28, 46, 0.3) 0%, rgba(22, 47, 74, 0.5) 50%, rgba(22, 47, 74, 0.85) 100%);
+          background: linear-gradient(
+            180deg,
+            rgba(14, 28, 46, 0.3) 0%,
+            rgba(22, 47, 74, 0.5) 50%,
+            rgba(22, 47, 74, 0.85) 100%
+          );
         }
         .rp-hero-content {
           position: relative;
@@ -689,7 +874,9 @@ export default function ResultsPage() {
           margin: 0;
         }
         @media (min-width: 720px) {
-          .rp-hero-title { font-size: 32px; }
+          .rp-hero-title {
+            font-size: 32px;
+          }
         }
         .rp-hero-sub {
           font-size: 13px;
@@ -711,7 +898,9 @@ export default function ResultsPage() {
           scrollbar-width: none;
           padding-bottom: 4px;
         }
-        .rp-rail::-webkit-scrollbar { display: none; }
+        .rp-rail::-webkit-scrollbar {
+          display: none;
+        }
         .rp-rail-card {
           flex: 0 0 calc(33.33% - 7px);
           min-width: 150px;
@@ -722,12 +911,18 @@ export default function ResultsPage() {
           text-align: left;
           cursor: pointer;
           scroll-snap-align: start;
-          transition: border-color 0.15s ease, transform 0.15s ease;
+          transition:
+            border-color 0.15s ease,
+            transform 0.15s ease;
         }
         @media (max-width: 480px) {
-          .rp-rail-card { flex: 0 0 70%; }
+          .rp-rail-card {
+            flex: 0 0 70%;
+          }
         }
-        .rp-rail-card:hover:not(.rp-rail-card-locked):not(.rp-rail-card-active) {
+        .rp-rail-card:hover:not(.rp-rail-card-locked):not(
+            .rp-rail-card-active
+          ) {
           border-color: var(--navy-soft);
         }
         .rp-rail-card-active {
@@ -782,11 +977,17 @@ export default function ResultsPage() {
           animation: rpFadeIn 0.25s ease;
         }
         @keyframes rpFadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
         @keyframes rp-spin {
-          to { transform: rotate(360deg); }
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         .rp-card-photo {
@@ -798,7 +999,11 @@ export default function ResultsPage() {
         .rp-card-photo-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(to top, rgba(22, 47, 74, 0.85) 0%, rgba(22, 47, 74, 0) 55%);
+          background: linear-gradient(
+            to top,
+            rgba(22, 47, 74, 0.85) 0%,
+            rgba(22, 47, 74, 0) 55%
+          );
         }
         .rp-rank-badge {
           position: absolute;
@@ -891,7 +1096,9 @@ export default function ResultsPage() {
           margin-bottom: 22px;
         }
         @media (min-width: 720px) {
-          .rp-insight { font-size: 18px; }
+          .rp-insight {
+            font-size: 18px;
+          }
         }
 
         .rp-section {
@@ -1020,7 +1227,7 @@ export default function ResultsPage() {
           padding: 10px 12px;
           font-size: 13px;
           line-height: 1.4;
-          color: #7A4A10;
+          color: #7a4a10;
         }
         .rp-heads-up-item-must {
           background: var(--amber-bg);
@@ -1086,7 +1293,9 @@ export default function ResultsPage() {
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
-          transition: background 0.15s ease, transform 0.1s ease;
+          transition:
+            background 0.15s ease,
+            transform 0.1s ease;
         }
         .rp-btn-primary:hover {
           background: var(--brand-50);
@@ -1136,7 +1345,9 @@ export default function ResultsPage() {
           border: 0.5px solid var(--blue-pale);
           border-radius: 8px;
           color: var(--navy);
-          transition: background 0.15s ease, color 0.15s ease;
+          transition:
+            background 0.15s ease,
+            color 0.15s ease;
         }
         .rp-social-btn:hover {
           background: var(--navy);
@@ -1156,7 +1367,6 @@ export default function ResultsPage() {
           text-decoration: underline;
         }
       `}</style>
-
     </div>
   );
 }
