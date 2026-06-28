@@ -265,8 +265,8 @@ export default function PrivacyPage() {
           <p className="ab-body">
             CityTwin is not directed at individuals under the age of 18. We do
             not knowingly collect personal information from anyone under 18. If
-            you believe we have inadvertently collected information from a minor,
-            please contact us and we will delete it promptly.
+            you believe we have inadvertently collected information from a
+            minor, please contact us and we will delete it promptly.
           </p>
 
           <h2 style={heading}>9. Security</h2>
