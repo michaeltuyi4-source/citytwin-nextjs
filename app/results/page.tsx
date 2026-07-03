@@ -63,10 +63,10 @@ export default function ResultsPage() {
 
   const supabase = createClient();
 
-  // Session check
+  // Session check — returns true if user is premium
   const handleSession = useCallback(
-    async (session: { user: { id: string } } | null) => {
-      if (!session) return;
+    async (session: { user: { id: string } } | null): Promise<boolean> => {
+      if (!session) return false;
       const { data: profile } = await supabase
         .from("profiles")
         .select("tier")
@@ -75,7 +75,9 @@ export default function ResultsPage() {
 
       if (profile?.tier === "premium") {
         setUnlocked(true);
+        return true;
       }
+      return false;
     },
     [supabase],
   );
@@ -201,8 +203,13 @@ export default function ResultsPage() {
         // profiles query) directly inside onAuthStateChange deadlocks on the
         // INITIAL_SESSION path, because the callback runs while GoTrue holds
         // its auth lock. setTimeout releases the lock first.
-        setTimeout(() => {
-          handleSession(session);
+        setTimeout(async () => {
+          const isPremium = await handleSession(session);
+          // On a fresh sign-in (signup or login), if the user is not yet
+          // premium, open the upgrade modal immediately.
+          if (event === "SIGNED_IN" && !isPremium) {
+            setUpgradeOpen(true);
+          }
         }, 0);
       } else if (event === "SIGNED_OUT") {
         setSession(null);
