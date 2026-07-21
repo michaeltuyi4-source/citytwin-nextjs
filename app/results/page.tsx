@@ -400,6 +400,9 @@ export default function ResultsPage() {
           <p className="rp-hero-sub">
             3 neighborhoods ranked by how you actually live.
           </p>
+          <p className="rp-hero-note">
+            Showing the areas we currently cover in {cityLabel}. More coming soon.
+          </p>
         </div>
       </section>
 
@@ -882,6 +885,12 @@ export default function ResultsPage() {
           font-size: 13px;
           color: rgba(255, 255, 255, 0.75);
           margin: 0;
+        }
+        .rp-hero-note {
+          font-size: 12px;
+          line-height: 1.5;
+          color: rgba(255, 255, 255, 0.72);
+          margin: 6px 0 0;
         }
 
         .rp-rail-wrap {
