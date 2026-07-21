@@ -515,6 +515,10 @@ export default function FindPage() {
             <span className="city-trigger-arrow">›</span>
           </button>
 
+          <p className="city-coverage-note">
+            We cover selected areas in each city today. More coming soon.
+          </p>
+
           {selectedCityData && (
             <div className="city-confirm">
               <div className="city-confirm-name">{selectedCityData.name}</div>
