@@ -146,9 +146,10 @@ export default function TermsPage() {
             CityTwin provides neighborhood recommendations based on lifestyle
             priorities you provide. These recommendations are for informational
             purposes only. We do not guarantee the accuracy, completeness, or
-            suitability of any neighborhood information. You should independently
-            verify all information before making any relocation or housing
-            decision. CityTwin is not a licensed real estate broker or advisor.
+            suitability of any neighborhood information. You should
+            independently verify all information before making any relocation or
+            housing decision. CityTwin is not a licensed real estate broker or
+            advisor.
           </p>
 
           <h2 style={heading}>7. Intellectual property</h2>

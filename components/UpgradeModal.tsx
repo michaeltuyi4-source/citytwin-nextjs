@@ -30,12 +30,11 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: 'lifetime',
-          userId: session.user.id,
-          email: session.user.email,
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ email: session.user.email }),
       });
 
       const { url } = await res.json();
