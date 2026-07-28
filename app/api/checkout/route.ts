@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       metadata: { userId: user.id },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/results?success=true`,
       cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL}/results?cancelled=true`,
+      allow_promotion_codes: true,
     });
 
     return NextResponse.json({ url: session.url });
