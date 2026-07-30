@@ -15,7 +15,7 @@ export default function AuthModal({
   isOpen,
   onClose,
   heading = "Unlock all matches",
-  sub = "Create a free account — no credit card required.",
+  sub = "Create a free account to continue.",
 }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<"signup" | "login">("signup");
   const [view, setView] = useState<"form" | "reset-request" | "reset-sent">(
