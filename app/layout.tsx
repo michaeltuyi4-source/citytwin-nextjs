@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://www.citytwinapp.com'),
   alternates: { canonical: '/' },
   title: 'CityTwin - Find the neighborhood where your life already exists',
-  description: 'CityTwin matches you to neighborhoods based on how you live - coffee, fitness, faith, community and more. Free to try across 8 US cities.',
+  description: 'CityTwin matches you to neighborhoods based on how you actually live: walkability, food, nightlife, outdoor space, affordability, and more. Free to try across 16 US cities.',
 };
 
 export default function RootLayout({
@@ -38,16 +38,15 @@ export default function RootLayout({
         <meta httpEquiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/favicon.svg" />
-        <meta name="description" content="CityTwin matches you to neighborhoods based on how you live - coffee, fitness, faith, community and more. Free to try across 8 US cities." />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="CityTwin" />
         <meta property="og:title" content="CityTwin - Find the neighborhood where your life already exists" />
-        <meta property="og:description" content="Match your lifestyle to real neighborhoods across the US. Coffee, fitness, faith, community - all weighted by priority." />
+        <meta property="og:description" content="CityTwin matches you to neighborhoods based on how you actually live: walkability, food, nightlife, outdoor space, affordability, and more. Free to try across 16 US cities." />
         <meta property="og:image" content="https://www.citytwinapp.com/images/pexels-samson-katt-5225319.jpg" />
         <meta property="og:url" content="https://www.citytwinapp.com" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="CityTwin - Find the neighborhood where your life already exists" />
-        <meta name="twitter:description" content="Match your lifestyle to real neighborhoods across the US." />
+        <meta name="twitter:description" content="CityTwin matches you to neighborhoods based on how you actually live: walkability, food, nightlife, outdoor space, affordability, and more. Free to try across 16 US cities." />
         <meta name="twitter:image" content="https://www.citytwinapp.com/images/pexels-samson-katt-5225319.jpg" />
       </head>
       <body
