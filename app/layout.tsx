@@ -20,6 +20,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.citytwinapp.com'),
+  alternates: { canonical: '/' },
   title: 'CityTwin - Find the neighborhood where your life already exists',
   description: 'CityTwin matches you to neighborhoods based on how you live - coffee, fitness, faith, community and more. Free to try across 8 US cities.',
 };
@@ -36,7 +38,6 @@ export default function RootLayout({
         <meta httpEquiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/favicon.svg" />
-        <link rel="canonical" href="https://www.citytwinapp.com" />
         <meta name="description" content="CityTwin matches you to neighborhoods based on how you live - coffee, fitness, faith, community and more. Free to try across 8 US cities." />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="CityTwin" />

@@ -1,5 +1,5 @@
 # CityTwin — Neighborhood Matching App
-# https://citytwinapp.com
+# https://www.citytwinapp.com
 
 CityTwin is a neighborhood matching and lifestyle companion for people
 relocating to new cities. It matches users to neighborhoods based on
