@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
   const { city, priorities } = await req.json();
 
   await ensureCityData(city);
-  const allMatches = getTopMatches(city, priorities, LIFESTYLE_CATEGORIES);
-  const premiumMatches = allMatches.slice(1); // matches #2 and #3 only
+  const { matches } = getTopMatches(city, priorities, LIFESTYLE_CATEGORIES);
+  const premiumMatches = matches.slice(1); // matches #2 and #3 only
 
   return NextResponse.json({ matches: premiumMatches });
 }
