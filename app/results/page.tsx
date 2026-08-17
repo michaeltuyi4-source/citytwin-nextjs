@@ -57,6 +57,7 @@ export default function ResultsPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [pollTimedOut, setPollTimedOut] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [noStrongMatch, setNoStrongMatch] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const premiumFetchedRef = useRef(false);
@@ -96,8 +97,13 @@ export default function ResultsPage() {
       sessionStorage.getItem("citytwin_city") ||
       localStorage.getItem("citytwin_city");
 
+    const rawNoStrong =
+      sessionStorage.getItem("citytwin_no_strong_match") ||
+      localStorage.getItem("citytwin_no_strong_match");
+
     if (rawCity) setCityKey(rawCity);
     if (rawPri) setPriorities(JSON.parse(rawPri));
+    setNoStrongMatch(rawNoStrong === "true");
 
     if (raw) {
       try {
@@ -412,6 +418,14 @@ export default function ResultsPage() {
           </p>
         </div>
       </section>
+
+      {noStrongMatch && (
+        <div className="rp-no-strong-wrap">
+          <p className="rp-no-strong">
+            No neighborhood here fully meets your must-haves. Here are the closest options.
+          </p>
+        </div>
+      )}
 
       <div className="rp-rail-wrap">
         <div className="rp-rail" role="tablist" aria-label="Your matches">
@@ -898,6 +912,22 @@ export default function ResultsPage() {
           line-height: 1.5;
           color: rgba(255, 255, 255, 0.72);
           margin: 6px 0 0;
+        }
+
+        .rp-no-strong-wrap {
+          max-width: 720px;
+          margin: 0 auto;
+          padding: 16px 20px 0;
+        }
+        .rp-no-strong {
+          margin: 0;
+          padding: 12px 16px;
+          background: var(--amber-bg);
+          border-radius: 12px;
+          color: var(--slate-600);
+          font-size: 13px;
+          line-height: 1.5;
+          text-align: center;
         }
 
         .rp-rail-wrap {

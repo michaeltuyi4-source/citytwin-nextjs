@@ -411,18 +411,20 @@ export default function FindPage() {
       showError(3);
       return;
     }
-    const results = getTopMatches(
+    const { matches, noStrongMatch } = getTopMatches(
       selectedCity!,
       priorities,
       LIFESTYLE_CATEGORIES,
     );
-    const freeResult = results.slice(0, 1); // Only match #1 stored client-side; #2/#3 are server-gated
+    const freeResult = matches.slice(0, 1); // Only match #1 stored client-side; #2/#3 are server-gated
     sessionStorage.setItem("citytwin_results", JSON.stringify(freeResult));
     sessionStorage.setItem("citytwin_city", selectedCity!);
     sessionStorage.setItem("citytwin_priorities", JSON.stringify(priorities));
+    sessionStorage.setItem("citytwin_no_strong_match", String(noStrongMatch));
     localStorage.setItem("citytwin_results", JSON.stringify(freeResult));
     localStorage.setItem("citytwin_city", selectedCity!);
     localStorage.setItem("citytwin_priorities", JSON.stringify(priorities));
+    localStorage.setItem("citytwin_no_strong_match", String(noStrongMatch));
     router.push("/results");
   }
 
