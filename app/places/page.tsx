@@ -72,6 +72,13 @@ export default function PlacesPage() {
   const searchMarkerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapboxglRef = useRef<any>(null);
+  // The "your matched neighborhood" center marker, so it can be moved on switch
+  // instead of being pinned to match #1.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const centerMarkerRef = useRef<any>(null);
+  // Skips the post-switch effect on initial mount (activeIdx 0), so the first
+  // category load fires exactly once via the map "load" handler.
+  const didMountRef = useRef(false);
 
   const [allResults, setAllResults] = useState<MatchResult[]>([]);
   const [userPriorities, setUserPriorities] = useState<Record<string, string>>(
@@ -154,6 +161,28 @@ export default function PlacesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIdx, allResults]);
 
+  // ── Re-run category selection after a neighborhood switch ──────────────────────
+  // switchNeighborhood only updates UI state, flies the map, and moves the center
+  // marker. The places fetch and marker render happen HERE, after the re-render,
+  // so selectCategory reads the fresh coords/activeIdx (not the stale closure that
+  // caused #2/#3 to load #1's places). The didMountRef guard skips the initial
+  // mount (activeIdx 0), where the map "load" handler already selects the first
+  // category exactly once, so there is no duplicate fetch or flicker on first load.
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    if (!mapRef.current) return;
+    if (activeCat) {
+      const cat = CATEGORIES.find((c2) => c2.id === activeCat);
+      if (cat) selectCategory(cat);
+    } else if (CATEGORIES.length > 0) {
+      selectCategory(CATEGORIES[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIdx]);
+
   // ── Init Mapbox ───────────────────────────────────────────────────────────────
   useEffect(() => {
     // Wait for results so we center on the real neighborhood, not the fallback coords
@@ -180,7 +209,10 @@ export default function PlacesPage() {
             const map = new mapboxgl.Map({
               container: mapContainerRef.current!,
               style: "mapbox://styles/mapbox/light-v11",
-              center: [allResults[0].coords.lng, allResults[0].coords.lat],
+              center: [
+                allResults[activeIdx].coords.lng,
+                allResults[activeIdx].coords.lat,
+              ],
               zoom: 14,
             });
             map.addControl(
@@ -193,8 +225,14 @@ export default function PlacesPage() {
             }, 200);
 
             // Center marker
-            new mapboxgl.Marker({ color: "#162F4A", scale: 0.8 })
-              .setLngLat([allResults[0].coords.lng, allResults[0].coords.lat])
+            centerMarkerRef.current = new mapboxgl.Marker({
+              color: "#162F4A",
+              scale: 0.8,
+            })
+              .setLngLat([
+                allResults[activeIdx].coords.lng,
+                allResults[activeIdx].coords.lat,
+              ])
               .setPopup(
                 new mapboxgl.Popup({ offset: 25 }).setHTML(
                   `<div class="popup-name">${currentResult?.name || "Your neighborhood"}</div>
@@ -221,6 +259,7 @@ export default function PlacesPage() {
       if (initTimer) clearTimeout(initTimer);
       markersRef.current = [];
       searchMarkerRef.current = null;
+      centerMarkerRef.current = null;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -407,13 +446,19 @@ export default function PlacesPage() {
     mapRef.current.flyTo({ center: [c.lng, c.lat], zoom: 14, duration: 800 });
     mapRef.current.resize();
 
-    // Re-select current tab for new neighborhood
-    if (activeCat) {
-      const cat = CATEGORIES.find((c2) => c2.id === activeCat);
-      if (cat) selectCategory(cat);
-    } else if (CATEGORIES.length > 0) {
-      selectCategory(CATEGORIES[0]);
-    }
+    // Move the "your matched neighborhood" center marker to the new match, and
+    // update its popup name so it no longer reads the previous neighborhood.
+    centerMarkerRef.current?.setLngLat([c.lng, c.lat]);
+    centerMarkerRef.current
+      ?.getPopup()
+      ?.setHTML(
+        `<div class="popup-name">${n.name || "Your neighborhood"}</div>
+                 <div class="popup-address">Your matched neighborhood</div>`,
+      );
+
+    // The actual places fetch + marker render for the new neighborhood happens in
+    // the [activeIdx] effect below, AFTER this re-render, so selectCategory reads
+    // the fresh coords/activeIdx instead of this handler's stale closure.
   }
 
   // ── Address search ────────────────────────────────────────────────────────────
@@ -635,7 +680,7 @@ export default function PlacesPage() {
               {placeLoading
                 ? `Searching near ${currentResult?.name || ""}…`
                 : places.length > 0
-                  ? `${places.length} place${places.length !== 1 ? "s" : ""} within 1 mile`
+                  ? `${places.length} place${places.length !== 1 ? "s" : ""} within 3 miles`
                   : "Select a category above"}
             </div>
           </div>
@@ -814,7 +859,7 @@ export default function PlacesPage() {
                     {CATEGORIES.find(
                       (c) => c.id === activeCat,
                     )?.label?.toLowerCase()}{" "}
-                    found within 1 mile of {currentResult?.name}. Try another
+                    found within 3 miles of {currentResult?.name}. Try another
                     category.
                   </div>
                 </div>
