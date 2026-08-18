@@ -922,7 +922,7 @@ export default function PlacesPage() {
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
         heading="Unlock all neighborhoods"
-        sub="Explore all three of your matched neighborhoods. Create a free account to continue, then unlock the full set for a one-time $9. No subscription."
+        sub="Explore all three of your matched neighborhoods. Create a free account to continue. One payment of $9 unlocks them all, yours forever. Not per match, not a subscription."
       />
       <UpgradeModal
         isOpen={upgradeOpen}

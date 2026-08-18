@@ -57,7 +57,7 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
       <div className="upgrade-card">
         <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
         <div className="upgrade-badge">Free account</div>
-        <h2 className="modal-heading" id="upgrade-modal-heading">Unlock your full results</h2>
+        <h2 className="modal-heading" id="upgrade-modal-heading">Unlock both remaining matches</h2>
         <p className="modal-sub">
           You&apos;re in. Upgrade once to see all three matches, plus priority access to every new city we add.
         </p>
@@ -68,6 +68,10 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
             <div className="price-label">one-time</div>
           </div>
         </div>
+
+        <p className="price-clarify">
+          One payment unlocks matches 2 and 3, yours forever. Not per match.
+        </p>
 
         {error && (
           <p style={{ color: '#e05c4b', fontSize: '13px', textAlign: 'center', marginBottom: 8 }}>

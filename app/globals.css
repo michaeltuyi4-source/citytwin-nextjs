@@ -742,6 +742,13 @@ body {
   font-size: 0.72rem;
   color: var(--slate-500);
 }
+.price-clarify {
+  font-size: 0.78rem;
+  color: var(--slate-500);
+  line-height: 1.5;
+  text-align: center;
+  margin: 12px 0 18px;
+}
 .btn-upgrade {
   background: var(--navy);
   color: var(--white);
