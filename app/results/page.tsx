@@ -763,7 +763,7 @@ export default function ResultsPage() {
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
         heading="Unlock all matches"
-        sub="See your #2 and #3 neighborhood matches. Create a free account to continue, then unlock all 3 for a one-time $9. No subscription."
+        sub="See your #2 and #3 neighborhood matches. Create a free account to continue. One payment of $9 unlocks both, yours forever. Not per match, not a subscription."
       />
       <UpgradeModal
         isOpen={upgradeOpen}
