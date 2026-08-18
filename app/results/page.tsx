@@ -411,7 +411,7 @@ export default function ResultsPage() {
             {results[0]?.name} fits how you live
           </h1>
           <p className="rp-hero-sub">
-            3 neighborhoods ranked by how you actually live.
+            Your neighborhood matches for {cityLabel}, ranked by how you actually live.
           </p>
           <p className="rp-hero-note">
             Showing the areas we currently cover in {cityLabel}. More coming soon.
@@ -763,7 +763,7 @@ export default function ResultsPage() {
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
         heading="Unlock all matches"
-        sub="See your #2 and #3 neighborhood matches. Create a free account to continue. One payment of $9 unlocks both, yours forever. Not per match, not a subscription."
+        sub="See your #2 and #3 neighborhood matches. Create a free account to continue."
       />
       <UpgradeModal
         isOpen={upgradeOpen}
