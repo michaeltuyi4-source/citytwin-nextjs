@@ -9,6 +9,7 @@
 
 // @ts-ignore - JS module with no type declarations
 import { NEIGHBORHOODS } from '@/neighborhoods';
+import type { ResidentLink } from '@/lib/types';
 
 // ─────────────────────────────────────────────
 // Source flag: 'hardcoded' (default) or 'db'. Set NEXT_PUBLIC_NEIGHBORHOOD_SOURCE
@@ -58,6 +59,7 @@ const NEIGHBORHOOD_COLUMNS = [
   'id', 'name', 'tagline',
   ...Object.keys(SCORE_MAP),
   'rent_min', 'rent_max', 'walk_score', 'highlights', 'gaps', 'best_for', 'lat', 'lng',
+  'resident_links',
 ].join(',');
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,6 +77,7 @@ interface MappedNeighborhood {
   gaps: string[];
   bestFor: string[];
   coords: { lat: number; lng: number };
+  residentLinks?: ResidentLink[];
 }
 
 export interface CityData {
@@ -123,6 +126,7 @@ function mapRow(row: DbRow): MappedNeighborhood {
     gaps: row.gaps ?? [],
     bestFor: row.best_for ?? [],
     coords: { lat: row.lat, lng: row.lng },
+    residentLinks: row.resident_links ?? [],
   };
 }
 

@@ -214,6 +214,7 @@ function getTopMatches(cityKey, userPriorityLabels, categoryDefs) {
       highlights: neighborhood.highlights,
       bestFor:    neighborhood.bestFor,
       coords:     neighborhood.coords,
+      residentLinks: neighborhood.residentLinks ?? [],
 
       // Full scores — used for category breakdown on results page
       scores: neighborhood.scores,

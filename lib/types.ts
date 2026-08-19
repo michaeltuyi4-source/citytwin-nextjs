@@ -29,6 +29,13 @@ export interface PhraseChip {
   weight: PriorityLabel;
 }
 
+export interface ResidentLink {
+  type: string;
+  label: string;
+  url?: string;
+  videoId?: string;
+}
+
 export interface MatchResult {
   id: string;
   name: string;
@@ -45,6 +52,7 @@ export interface MatchResult {
   bestFor: string[];
   coords: Coords;
   scores: NeighborhoodScores;
+  residentLinks?: ResidentLink[];
 }
 
 export interface Place {

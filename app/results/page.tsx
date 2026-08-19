@@ -12,6 +12,7 @@ import NavAuth from "@/components/NavAuth";
 import AuthModal from "@/components/AuthModal";
 import UpgradeModal from "@/components/UpgradeModal";
 import ShareModal from "@/components/ShareModal";
+import ResidentLinksPanel from "@/components/ResidentLinksPanel";
 import { createClient } from "@/lib/supabase";
 import { getCityPhoto, getCityLabel } from "@/lib/photos";
 import { getCategoryIcon } from "@/lib/categoryIcons";
@@ -599,6 +600,8 @@ export default function ResultsPage() {
                 </div>
               </section>
             )}
+
+            <ResidentLinksPanel links={activeMatch.residentLinks} />
 
             <section className="rp-stats">
               <div className="rp-stat">
