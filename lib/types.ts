@@ -63,6 +63,7 @@ export interface Place {
   reviews?: number;
   address?: string;
   open?: boolean | null;
+  photoRef?: string | null;
 }
 
 export type PriorityLabel = 'must-have' | 'important' | 'nice-to-have';

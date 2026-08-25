@@ -37,6 +37,14 @@ function buildTextSearchUrl(
   return u.toString();
 }
 
+// First photo's reference, exchanged for an image via /api/place-photo. Isolated
+// like the URL builders: under Places API (New) this becomes photos[0].name, so
+// keep the extraction here for a localized future migration.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function firstPhotoRef(place: any): string | null {
+  return place.photos?.[0]?.photo_reference ?? null;
+}
+
 // ─── Category → Google Places `type` (Nearby Search). 12 categories, matching the
 // frontend tabs exactly. Ported verbatim from the retired Azure Function. ───────
 const CATEGORY_TYPES: Record<string, string> = {
@@ -112,6 +120,7 @@ export async function GET(request: Request) {
       open_now:           place.opening_hours?.open_now ?? null,
       lat:                place.geometry?.location?.lat,
       lng:                place.geometry?.location?.lng,
+      photoRef:           firstPhotoRef(place),
     }));
 
     return NextResponse.json(
