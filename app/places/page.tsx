@@ -59,6 +59,7 @@ function normalizePlaces(data: any): Place[] {
     reviews: p.user_ratings_total,
     address: p.vicinity,
     open: p.open_now,
+    photoRef: (p.photoRef as string | null) ?? null,
   })) as Place[];
 }
 
@@ -91,6 +92,7 @@ export default function PlacesPage() {
   const [placeError, setPlaceError] = useState(false);
   const [placeCounts, setPlaceCounts] = useState<Record<string, number>>({});
   const [highlightedCard, setHighlighted] = useState<number | null>(null);
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
   const [authOpen, setAuthOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [isPremium, setIsPremium] = useState(false); // tier === 'premium'
@@ -361,6 +363,7 @@ export default function PlacesPage() {
 
   function renderPlaces(data: Place[]) {
     setPlaces(data);
+    setImgErrors({}); // clear per-card photo-error flags for the new list
     setPlaceLoading(false);
     clearMarkers();
 
@@ -889,27 +892,46 @@ export default function PlacesPage() {
                     className={`place-card${highlightedCard === i ? " highlighted" : ""}`}
                     onClick={() => focusPlace(place, i)}
                   >
-                    <div className="place-card-top">
-                      <div className="place-name">{place.name}</div>
-                      <span className={`place-open ${openStatus}`}>
-                        {openLabel}
-                      </span>
-                    </div>
-                    {place.rating && (
-                      <div className="place-meta">
-                        <span className="place-rating">
-                          {stars} {place.rating}
+                    <div className="place-thumb">
+                      {!place.photoRef || imgErrors[i] ? (
+                        <span className="place-thumb-fallback" aria-hidden="true">
+                          {getCategoryIcon(activeCat ?? "", 24)}
                         </span>
-                        {place.reviews && (
-                          <span className="place-reviews">
-                            ({place.reviews.toLocaleString()} reviews)
-                          </span>
-                        )}
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={`/api/place-photo?ref=${encodeURIComponent(place.photoRef)}`}
+                          alt={place.name}
+                          loading="lazy"
+                          onError={() =>
+                            setImgErrors((prev) => ({ ...prev, [i]: true }))
+                          }
+                        />
+                      )}
+                    </div>
+                    <div className="place-card-content">
+                      <div className="place-card-top">
+                        <div className="place-name">{place.name}</div>
+                        <span className={`place-open ${openStatus}`}>
+                          {openLabel}
+                        </span>
                       </div>
-                    )}
-                    {place.address && (
-                      <div className="place-address">{place.address}</div>
-                    )}
+                      {place.rating && (
+                        <div className="place-meta">
+                          <span className="place-rating">
+                            {stars} {place.rating}
+                          </span>
+                          {place.reviews && (
+                            <span className="place-reviews">
+                              ({place.reviews.toLocaleString()} reviews)
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {place.address && (
+                        <div className="place-address">{place.address}</div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
