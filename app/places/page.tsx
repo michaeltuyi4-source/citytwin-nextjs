@@ -15,7 +15,7 @@ import type { MatchResult, Place } from "@/lib/types";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-const API_BASE = "https://citytwin-api.azurewebsites.net/api/places";
+const API_BASE = "/api/places";
 
 const CATEGORIES = [
   { id: "coffeeShops", label: "Coffee" },
