@@ -3165,6 +3165,7 @@ body {
     flex: 1;
     overflow-y: hidden; /* list scrolls only at/near the full snap (below) */
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 8px;
   }
   .places-panel[data-snap="full"] .places-list {

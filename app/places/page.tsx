@@ -293,6 +293,7 @@ export default function PlacesPage() {
     function setup() {
       const sheet = sheetRef.current;
       const grab = sheetPeekRef.current; // whole header (handle + summary) is the grab target
+      const list = sheetListRef.current; // scrollable card list, for scroll/drag coordination
       const main = sheet?.parentElement; // .places-main (positioned container)
       if (!sheet || !grab || !main) return;
 
@@ -341,6 +342,26 @@ export default function PlacesPage() {
         );
       }
 
+      // Shared snap decision (used by both the header drag and the list drag).
+      // Symmetric in both directions: a flick or a deliberate drag past MIN_TRAVEL
+      // always advances at least one snap in the drag direction.
+      function settle(finalY: number, fromY: number, fromSnap: SnapPoint) {
+        const startIdx = order.indexOf(fromSnap);
+        const delta = finalY - fromY; // + = down (collapse), - = up (expand)
+        const FLICK = 0.5; // px/ms
+        const MIN_TRAVEL = 24; // px
+        let idx: number;
+        if (Math.abs(velocity) > FLICK) {
+          idx = velocity < 0 ? startIdx - 1 : startIdx + 1; // up = expand toward full
+        } else {
+          idx = order.indexOf(nearest(finalY));
+          if (idx === startIdx && Math.abs(delta) > MIN_TRAVEL) {
+            idx = delta < 0 ? startIdx - 1 : startIdx + 1;
+          }
+        }
+        goTo(order[clamp(idx, 0, order.length - 1)]);
+      }
+
       function onDown(e: PointerEvent) {
         dragging = true;
         startPointerY = e.clientY;
@@ -379,27 +400,72 @@ export default function PlacesPage() {
           snaps.full,
           snaps.peek,
         );
-        const startIdx = order.indexOf(startSnap);
-        const delta = finalY - startY; // + = down (collapse), - = up (expand)
-        const FLICK = 0.5; // px/ms: a quick flick moves one snap regardless of distance
-        const MIN_TRAVEL = 24; // px: a deliberate drag past this always moves >= 1 snap
-        let idx: number;
-
-        if (Math.abs(velocity) > FLICK) {
-          // flick: one snap in the flick direction (up = expand toward full)
-          idx = velocity < 0 ? startIdx - 1 : startIdx + 1;
-        } else {
-          idx = order.indexOf(nearest(finalY));
-          // guarantee a deliberate drag never springs back to the start snap
-          if (idx === startIdx && Math.abs(delta) > MIN_TRAVEL) {
-            idx = delta < 0 ? startIdx - 1 : startIdx + 1;
-          }
-        }
-        goTo(order[clamp(idx, 0, order.length - 1)]);
+        settle(finalY, startY, startSnap);
         try {
           grab!.releasePointerCapture(e.pointerId);
         } catch {}
       }
+
+      // ── Scroll/drag coordination for the card list ──────────────────────────
+      // Sheet full + list at top + drag down  -> collapse the sheet (not scroll).
+      // Sheet full + list scrolled            -> native scroll.
+      // Sheet not full (list not scrollable)  -> any list drag moves the sheet.
+      let listDragging = false;
+      let listStartTouchY = 0;
+      let listFromY = 0;
+
+      function onListStart(e: TouchEvent) {
+        if (!list || e.touches.length !== 1) return;
+        listDragging = false;
+        listStartTouchY = e.touches[0].clientY;
+        startSnap = current;
+        lastY = e.touches[0].clientY;
+        lastT = e.timeStamp;
+        velocity = 0;
+      }
+      function onListMove(e: TouchEvent) {
+        if (!list) return;
+        const y = e.touches[0].clientY;
+        if (!listDragging) {
+          const dy0 = y - listStartTouchY; // + = down
+          const atTop = list.scrollTop <= 0;
+          const shouldDrag = current !== "full" || (atTop && dy0 > 0);
+          if (!(shouldDrag && Math.abs(dy0) > 4)) return; // let the list scroll natively
+          listDragging = true;
+          sheet!.classList.add("sheet-dragging");
+          listFromY = snaps[current];
+          listStartTouchY = y; // reset baseline so the sheet does not jump on takeover
+          lastY = y;
+          lastT = e.timeStamp;
+          velocity = 0;
+        }
+        e.preventDefault(); // take the gesture over from native scroll
+        const dy = y - listStartTouchY;
+        const dt = e.timeStamp - lastT;
+        if (dt > 0) {
+          velocity = velocity * 0.7 + ((y - lastY) / dt) * 0.3;
+          lastY = y;
+          lastT = e.timeStamp;
+        }
+        scheduleY(clamp(listFromY + dy, snaps.full, snaps.peek));
+      }
+      function onListEnd(e: TouchEvent) {
+        if (!listDragging) return;
+        listDragging = false;
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
+        sheet!.classList.remove("sheet-dragging");
+        const y = e.changedTouches[0]?.clientY ?? listStartTouchY;
+        const finalY = clamp(
+          listFromY + (y - listStartTouchY),
+          snaps.full,
+          snaps.peek,
+        );
+        settle(finalY, listFromY, startSnap);
+      }
+
       const onResize = () => {
         computeSnaps();
         goTo(current);
@@ -413,6 +479,10 @@ export default function PlacesPage() {
       grab.addEventListener("pointermove", onMove);
       grab.addEventListener("pointerup", onUp);
       grab.addEventListener("pointercancel", onUp);
+      list?.addEventListener("touchstart", onListStart, { passive: true });
+      list?.addEventListener("touchmove", onListMove, { passive: false });
+      list?.addEventListener("touchend", onListEnd);
+      list?.addEventListener("touchcancel", onListEnd);
       window.addEventListener("resize", onResize);
       window.addEventListener("orientationchange", onResize);
 
@@ -421,6 +491,10 @@ export default function PlacesPage() {
         grab.removeEventListener("pointermove", onMove);
         grab.removeEventListener("pointerup", onUp);
         grab.removeEventListener("pointercancel", onUp);
+        list?.removeEventListener("touchstart", onListStart);
+        list?.removeEventListener("touchmove", onListMove);
+        list?.removeEventListener("touchend", onListEnd);
+        list?.removeEventListener("touchcancel", onListEnd);
         window.removeEventListener("resize", onResize);
         window.removeEventListener("orientationchange", onResize);
         if (rafId) cancelAnimationFrame(rafId);
