@@ -343,6 +343,13 @@ export default function FindPage() {
     }
   }, []);
 
+  // Reset scroll to the top whenever the step changes. This runs AFTER the panel
+  // swap commits, so it targets the new layout, and an instant jump cannot be
+  // interrupted by the reflow the way the previous in-handler smooth scroll was.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentStep]);
+
   function showError(step: StepNum) {
     setErrors((e) => ({ ...e, [step]: true }));
   }
@@ -395,7 +402,6 @@ export default function FindPage() {
       }
     }
     setCurrentStep(n);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function handleSubmit() {
