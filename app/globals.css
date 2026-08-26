@@ -2760,6 +2760,9 @@ body {
   flex-direction: column;
   overflow: hidden;
 }
+.places-sheet-handle {
+  display: none; /* mobile-only; shown in the max-width:767px sheet */
+}
 .panel-head {
   padding: 14px 16px;
   border-bottom: 1px solid var(--blue-pale);
@@ -3093,11 +3096,14 @@ body {
   }
 }
 @media (max-width: 767px) {
-  /* Fully stacked: H1, subline, explore tabs, category filters, map, then cards.
-     Each block is full width; horizontal-scroll rows scroll internally and are
-     capped at 100% so nothing widens the page. */
+  /* Mobile: full-bleed Mapbox map with a draggable bottom sheet (peek/half/full)
+     overlaid. The sheet position is driven by --sheet-y, set by the drag
+     controller in app/places/page.tsx. Desktop (>=768px) is unaffected. */
+  .places-root {
+    height: 100dvh !important; /* override inline 100vh so sheet math accounts for
+                                  mobile browser chrome; desktop keeps 100vh */
+  }
   .places-main {
-    flex-direction: column;
     position: relative;
     flex: 1;
     min-height: 0;
@@ -3105,25 +3111,59 @@ body {
     max-width: 100%;
   }
   .places-map-wrap {
-    flex: none;
+    position: absolute; /* map is the full-bleed background */
+    inset: 0;
     width: 100%;
     max-width: 100%;
-    height: 300px;
   }
   .places-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     max-width: 100%;
-    min-width: 0;
-    border-left: none;
-    border-top: 1px solid var(--blue-pale);
-    flex: 1;
-    min-height: 0;
+    height: 100%;
+    border: none;
+    border-radius: 18px 18px 0 0;
+    background: var(--white);
+    box-shadow: 0 -6px 24px rgba(22, 47, 74, 0.14);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    z-index: 5;
+    /* JS sets --sheet-y in px per snap; 45% is the pre-JS fallback (~half). */
+    transform: translateY(var(--sheet-y, 45%));
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+  }
+  .places-panel.sheet-dragging {
+    transition: none; /* no animation while the finger drives the sheet */
+  }
+  .places-sheet-peek {
+    flex-shrink: 0; /* measured peek region: handle + summary */
+  }
+  .places-sheet-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0 4px;
+    cursor: grab;
+    touch-action: none; /* handle drives the sheet, never scrolls or pans the map */
+  }
+  .places-sheet-handle-bar {
+    width: 40px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--blue-pale);
   }
   .places-list {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: hidden; /* list scrolls only at/near the full snap (below) */
     -webkit-overflow-scrolling: touch;
     padding: 8px;
+  }
+  .places-panel[data-snap="full"] .places-list {
+    overflow-y: auto;
   }
   .panel-head {
     padding: 8px 12px;
