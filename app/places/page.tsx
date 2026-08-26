@@ -292,38 +292,52 @@ export default function PlacesPage() {
 
     function setup() {
       const sheet = sheetRef.current;
-      const peek = sheetPeekRef.current;
-      const handle = sheetHandleRef.current;
+      const grab = sheetPeekRef.current; // whole header (handle + summary) is the grab target
       const main = sheet?.parentElement; // .places-main (positioned container)
-      if (!sheet || !peek || !handle || !main) return;
+      if (!sheet || !grab || !main) return;
 
+      const order: SnapPoint[] = ["full", "half", "peek"]; // by Y ascending (full = most open)
       const snaps: Record<SnapPoint, number> = { full: 0, half: 0, peek: 0 };
       let current: SnapPoint = DEFAULT_SNAP;
       let dragging = false;
       let startPointerY = 0;
       let startY = 0;
+      let startSnap: SnapPoint = current;
+      let lastY = 0;
+      let lastT = 0;
+      let velocity = 0; // px/ms, + = downward (collapse), - = upward (expand)
+      let rafId = 0;
+      let pendingY = 0;
       const clamp = (v: number, lo: number, hi: number) =>
         Math.max(lo, Math.min(hi, v));
 
       function computeSnaps() {
         const H = main!.clientHeight;
-        const peekH = peek!.offsetHeight; // handle + summary ONLY (refinement 1)
+        const peekH = grab!.offsetHeight; // handle + summary ONLY (refinement 1)
         snaps.full = Math.round(H * 0.06); // sheet nearly covers the map
         snaps.half = Math.round(H * 0.45); // ~55% visible (search + 2+ cards)
         snaps.peek = Math.max(0, H - peekH); // only handle + summary visible
       }
-      const applyY = (y: number) =>
-        sheet!.style.setProperty("--sheet-y", `${y}px`);
+      const setY = (y: number) => sheet!.style.setProperty("--sheet-y", `${y}px`);
+      // Batch move updates to one per frame so the transform stays buttery.
+      function scheduleY(y: number) {
+        pendingY = y;
+        if (rafId) return;
+        rafId = requestAnimationFrame(() => {
+          rafId = 0;
+          setY(pendingY);
+        });
+      }
       function goTo(point: SnapPoint) {
         current = point;
         sheet!.dataset.snap = point;
-        applyY(snaps[point]);
+        setY(snaps[point]);
       }
       function nearest(y: number): SnapPoint {
-        return (["full", "half", "peek"] as SnapPoint[]).reduce(
+        return order.reduce(
           (best, p) =>
             Math.abs(snaps[p] - y) < Math.abs(snaps[best] - y) ? p : best,
-          "half",
+          "half" as SnapPoint,
         );
       }
 
@@ -331,27 +345,59 @@ export default function PlacesPage() {
         dragging = true;
         startPointerY = e.clientY;
         startY = snaps[current];
+        startSnap = current;
+        lastY = e.clientY;
+        lastT = e.timeStamp;
+        velocity = 0;
         sheet!.classList.add("sheet-dragging");
-        handle!.setPointerCapture(e.pointerId);
+        grab!.setPointerCapture(e.pointerId);
         e.preventDefault();
       }
       function onMove(e: PointerEvent) {
         if (!dragging) return;
-        applyY(
+        const dt = e.timeStamp - lastT;
+        if (dt > 0) {
+          // smoothed instantaneous velocity for flick detection
+          velocity = velocity * 0.7 + ((e.clientY - lastY) / dt) * 0.3;
+          lastY = e.clientY;
+          lastT = e.timeStamp;
+        }
+        scheduleY(
           clamp(startY + (e.clientY - startPointerY), snaps.full, snaps.peek),
         );
       }
       function onUp(e: PointerEvent) {
         if (!dragging) return;
         dragging = false;
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
         sheet!.classList.remove("sheet-dragging");
-        goTo(
-          nearest(
-            clamp(startY + (e.clientY - startPointerY), snaps.full, snaps.peek),
-          ),
+        const finalY = clamp(
+          startY + (e.clientY - startPointerY),
+          snaps.full,
+          snaps.peek,
         );
+        const startIdx = order.indexOf(startSnap);
+        const delta = finalY - startY; // + = down (collapse), - = up (expand)
+        const FLICK = 0.5; // px/ms: a quick flick moves one snap regardless of distance
+        const MIN_TRAVEL = 24; // px: a deliberate drag past this always moves >= 1 snap
+        let idx: number;
+
+        if (Math.abs(velocity) > FLICK) {
+          // flick: one snap in the flick direction (up = expand toward full)
+          idx = velocity < 0 ? startIdx - 1 : startIdx + 1;
+        } else {
+          idx = order.indexOf(nearest(finalY));
+          // guarantee a deliberate drag never springs back to the start snap
+          if (idx === startIdx && Math.abs(delta) > MIN_TRAVEL) {
+            idx = delta < 0 ? startIdx - 1 : startIdx + 1;
+          }
+        }
+        goTo(order[clamp(idx, 0, order.length - 1)]);
         try {
-          handle!.releasePointerCapture(e.pointerId);
+          grab!.releasePointerCapture(e.pointerId);
         } catch {}
       }
       const onResize = () => {
@@ -363,20 +409,21 @@ export default function PlacesPage() {
       goTo(DEFAULT_SNAP);
       setTimeout(() => mapRef.current?.resize(), 60);
 
-      handle.addEventListener("pointerdown", onDown);
-      handle.addEventListener("pointermove", onMove);
-      handle.addEventListener("pointerup", onUp);
-      handle.addEventListener("pointercancel", onUp);
+      grab.addEventListener("pointerdown", onDown);
+      grab.addEventListener("pointermove", onMove);
+      grab.addEventListener("pointerup", onUp);
+      grab.addEventListener("pointercancel", onUp);
       window.addEventListener("resize", onResize);
       window.addEventListener("orientationchange", onResize);
 
       teardown = () => {
-        handle.removeEventListener("pointerdown", onDown);
-        handle.removeEventListener("pointermove", onMove);
-        handle.removeEventListener("pointerup", onUp);
-        handle.removeEventListener("pointercancel", onUp);
+        grab.removeEventListener("pointerdown", onDown);
+        grab.removeEventListener("pointermove", onMove);
+        grab.removeEventListener("pointerup", onUp);
+        grab.removeEventListener("pointercancel", onUp);
         window.removeEventListener("resize", onResize);
         window.removeEventListener("orientationchange", onResize);
+        if (rafId) cancelAnimationFrame(rafId);
         sheet.style.removeProperty("--sheet-y"); // restore desktop
         sheet.classList.remove("sheet-dragging");
         delete sheet.dataset.snap;

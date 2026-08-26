@@ -3141,6 +3141,11 @@ body {
   }
   .places-sheet-peek {
     flex-shrink: 0; /* measured peek region: handle + summary */
+    cursor: grab;
+    touch-action: none; /* the whole header is the grab target; the browser must
+                           not steal the drag as a scroll or map pan */
+    user-select: none;
+    -webkit-user-select: none;
   }
   .places-sheet-handle {
     display: flex;
