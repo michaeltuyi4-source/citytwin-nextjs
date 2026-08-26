@@ -17,6 +17,14 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 const API_BASE = "/api/places";
 
+// ── Mobile bottom sheet ────────────────────────────────────────────────────────
+// Three snap points for the mobile venue sheet. Desktop never uses these: the
+// sheet styles + drag logic are gated to (max-width: 767px).
+type SnapPoint = "peek" | "half" | "full";
+// Snap the sheet opens at. Change this one line to open at "peek" or "full".
+const DEFAULT_SNAP: SnapPoint = "half";
+const MOBILE_QUERY = "(max-width: 767px)";
+
 const CATEGORIES = [
   { id: "coffeeShops", label: "Coffee" },
   { id: "foodScene", label: "Food" },
@@ -73,6 +81,11 @@ export default function PlacesPage() {
   const searchMarkerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapboxglRef = useRef<any>(null);
+  // Mobile bottom-sheet refs (used only under max-width:767px).
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const sheetPeekRef = useRef<HTMLDivElement>(null); // handle + summary (peek region)
+  const sheetHandleRef = useRef<HTMLDivElement>(null); // grab target
+  const sheetListRef = useRef<HTMLDivElement>(null);
   // The "your matched neighborhood" center marker, so it can be moved on switch
   // instead of being pinned to match #1.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -269,6 +282,124 @@ export default function PlacesPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allResults]);
+
+  // ── Mobile bottom-sheet drag controller (max-width:767px only) ─────────────────
+  // Desktop is untouched: off-breakpoint this tears down and clears inline props,
+  // and the sheet transform (--sheet-y) is not applied by the desktop CSS.
+  useEffect(() => {
+    const mql = window.matchMedia(MOBILE_QUERY);
+    let teardown: (() => void) | null = null;
+
+    function setup() {
+      const sheet = sheetRef.current;
+      const peek = sheetPeekRef.current;
+      const handle = sheetHandleRef.current;
+      const main = sheet?.parentElement; // .places-main (positioned container)
+      if (!sheet || !peek || !handle || !main) return;
+
+      const snaps: Record<SnapPoint, number> = { full: 0, half: 0, peek: 0 };
+      let current: SnapPoint = DEFAULT_SNAP;
+      let dragging = false;
+      let startPointerY = 0;
+      let startY = 0;
+      const clamp = (v: number, lo: number, hi: number) =>
+        Math.max(lo, Math.min(hi, v));
+
+      function computeSnaps() {
+        const H = main!.clientHeight;
+        const peekH = peek!.offsetHeight; // handle + summary ONLY (refinement 1)
+        snaps.full = Math.round(H * 0.06); // sheet nearly covers the map
+        snaps.half = Math.round(H * 0.45); // ~55% visible (search + 2+ cards)
+        snaps.peek = Math.max(0, H - peekH); // only handle + summary visible
+      }
+      const applyY = (y: number) =>
+        sheet!.style.setProperty("--sheet-y", `${y}px`);
+      function goTo(point: SnapPoint) {
+        current = point;
+        sheet!.dataset.snap = point;
+        applyY(snaps[point]);
+      }
+      function nearest(y: number): SnapPoint {
+        return (["full", "half", "peek"] as SnapPoint[]).reduce(
+          (best, p) =>
+            Math.abs(snaps[p] - y) < Math.abs(snaps[best] - y) ? p : best,
+          "half",
+        );
+      }
+
+      function onDown(e: PointerEvent) {
+        dragging = true;
+        startPointerY = e.clientY;
+        startY = snaps[current];
+        sheet!.classList.add("sheet-dragging");
+        handle!.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      }
+      function onMove(e: PointerEvent) {
+        if (!dragging) return;
+        applyY(
+          clamp(startY + (e.clientY - startPointerY), snaps.full, snaps.peek),
+        );
+      }
+      function onUp(e: PointerEvent) {
+        if (!dragging) return;
+        dragging = false;
+        sheet!.classList.remove("sheet-dragging");
+        goTo(
+          nearest(
+            clamp(startY + (e.clientY - startPointerY), snaps.full, snaps.peek),
+          ),
+        );
+        try {
+          handle!.releasePointerCapture(e.pointerId);
+        } catch {}
+      }
+      const onResize = () => {
+        computeSnaps();
+        goTo(current);
+      };
+
+      computeSnaps();
+      goTo(DEFAULT_SNAP);
+      setTimeout(() => mapRef.current?.resize(), 60);
+
+      handle.addEventListener("pointerdown", onDown);
+      handle.addEventListener("pointermove", onMove);
+      handle.addEventListener("pointerup", onUp);
+      handle.addEventListener("pointercancel", onUp);
+      window.addEventListener("resize", onResize);
+      window.addEventListener("orientationchange", onResize);
+
+      teardown = () => {
+        handle.removeEventListener("pointerdown", onDown);
+        handle.removeEventListener("pointermove", onMove);
+        handle.removeEventListener("pointerup", onUp);
+        handle.removeEventListener("pointercancel", onUp);
+        window.removeEventListener("resize", onResize);
+        window.removeEventListener("orientationchange", onResize);
+        sheet.style.removeProperty("--sheet-y"); // restore desktop
+        sheet.classList.remove("sheet-dragging");
+        delete sheet.dataset.snap;
+        setTimeout(() => mapRef.current?.resize(), 60);
+      };
+    }
+
+    function sync() {
+      if (mql.matches) {
+        if (!teardown) setup();
+      } else {
+        teardown?.();
+        teardown = null;
+      }
+    }
+    sync();
+    mql.addEventListener("change", sync);
+    return () => {
+      mql.removeEventListener("change", sync);
+      teardown?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Auth gate ─────────────────────────────────────────────────────────────────
   // Reads the LIVE session and tier (profiles.tier, the same source of truth the
@@ -547,6 +678,7 @@ export default function PlacesPage() {
 
   return (
     <div
+      className="places-root"
       style={{
         fontFamily: "var(--font-body)",
         background:
@@ -664,10 +796,19 @@ export default function PlacesPage() {
           />
         </div>
 
-        {/* Sidebar */}
-        <div className="places-panel">
-          <div className="panel-head">
-            <div className="panel-title">
+        {/* Sidebar (desktop) / draggable bottom sheet (mobile) */}
+        <div className="places-panel" ref={sheetRef}>
+          {/* Peek region: handle + summary. The mobile peek snap reveals ONLY this. */}
+          <div className="places-sheet-peek" ref={sheetPeekRef}>
+            <div
+              className="places-sheet-handle"
+              ref={sheetHandleRef}
+              aria-hidden="true"
+            >
+              <span className="places-sheet-handle-bar" />
+            </div>
+            <div className="panel-head">
+              <div className="panel-title">
               {activeCat ? (
                 <span className="panel-title-inner">
                   <span className="panel-title-icon">
@@ -687,8 +828,9 @@ export default function PlacesPage() {
                   : "Select a category above"}
             </div>
           </div>
+          </div>
 
-          {/* Address search */}
+          {/* Address search (below the peek region: appears at half/full only) */}
           <div
             style={{
               padding: "7px 10px",
@@ -812,7 +954,7 @@ export default function PlacesPage() {
           </div>
 
           {/* Places list */}
-          <div className="places-list">
+          <div className="places-list" ref={sheetListRef}>
             {placeLoading && (
               <div className="loading-state">
                 <div className="loading-spinner" />
