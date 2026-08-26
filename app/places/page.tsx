@@ -292,68 +292,180 @@ export default function PlacesPage() {
 
     function setup() {
       const sheet = sheetRef.current;
-      const peek = sheetPeekRef.current;
-      const handle = sheetHandleRef.current;
+      const grab = sheetPeekRef.current; // whole header (handle + summary) is the grab target
+      const list = sheetListRef.current; // scrollable card list, for scroll/drag coordination
       const main = sheet?.parentElement; // .places-main (positioned container)
-      if (!sheet || !peek || !handle || !main) return;
+      if (!sheet || !grab || !main) return;
 
+      const order: SnapPoint[] = ["full", "half", "peek"]; // by Y ascending (full = most open)
       const snaps: Record<SnapPoint, number> = { full: 0, half: 0, peek: 0 };
       let current: SnapPoint = DEFAULT_SNAP;
       let dragging = false;
       let startPointerY = 0;
       let startY = 0;
+      let startSnap: SnapPoint = current;
+      let lastY = 0;
+      let lastT = 0;
+      let velocity = 0; // px/ms, + = downward (collapse), - = upward (expand)
+      let rafId = 0;
+      let pendingY = 0;
       const clamp = (v: number, lo: number, hi: number) =>
         Math.max(lo, Math.min(hi, v));
 
       function computeSnaps() {
         const H = main!.clientHeight;
-        const peekH = peek!.offsetHeight; // handle + summary ONLY (refinement 1)
+        const peekH = grab!.offsetHeight; // handle + summary ONLY (refinement 1)
         snaps.full = Math.round(H * 0.06); // sheet nearly covers the map
         snaps.half = Math.round(H * 0.45); // ~55% visible (search + 2+ cards)
         snaps.peek = Math.max(0, H - peekH); // only handle + summary visible
       }
-      const applyY = (y: number) =>
-        sheet!.style.setProperty("--sheet-y", `${y}px`);
+      const setY = (y: number) => sheet!.style.setProperty("--sheet-y", `${y}px`);
+      // Batch move updates to one per frame so the transform stays buttery.
+      function scheduleY(y: number) {
+        pendingY = y;
+        if (rafId) return;
+        rafId = requestAnimationFrame(() => {
+          rafId = 0;
+          setY(pendingY);
+        });
+      }
       function goTo(point: SnapPoint) {
         current = point;
         sheet!.dataset.snap = point;
-        applyY(snaps[point]);
+        setY(snaps[point]);
       }
       function nearest(y: number): SnapPoint {
-        return (["full", "half", "peek"] as SnapPoint[]).reduce(
+        return order.reduce(
           (best, p) =>
             Math.abs(snaps[p] - y) < Math.abs(snaps[best] - y) ? p : best,
-          "half",
+          "half" as SnapPoint,
         );
+      }
+
+      // Shared snap decision (used by both the header drag and the list drag).
+      // Symmetric in both directions: a flick or a deliberate drag past MIN_TRAVEL
+      // always advances at least one snap in the drag direction.
+      function settle(finalY: number, fromY: number, fromSnap: SnapPoint) {
+        const startIdx = order.indexOf(fromSnap);
+        const delta = finalY - fromY; // + = down (collapse), - = up (expand)
+        const FLICK = 0.5; // px/ms
+        const MIN_TRAVEL = 24; // px
+        let idx: number;
+        if (Math.abs(velocity) > FLICK) {
+          idx = velocity < 0 ? startIdx - 1 : startIdx + 1; // up = expand toward full
+        } else {
+          idx = order.indexOf(nearest(finalY));
+          if (idx === startIdx && Math.abs(delta) > MIN_TRAVEL) {
+            idx = delta < 0 ? startIdx - 1 : startIdx + 1;
+          }
+        }
+        goTo(order[clamp(idx, 0, order.length - 1)]);
       }
 
       function onDown(e: PointerEvent) {
         dragging = true;
         startPointerY = e.clientY;
         startY = snaps[current];
+        startSnap = current;
+        lastY = e.clientY;
+        lastT = e.timeStamp;
+        velocity = 0;
         sheet!.classList.add("sheet-dragging");
-        handle!.setPointerCapture(e.pointerId);
+        grab!.setPointerCapture(e.pointerId);
         e.preventDefault();
       }
       function onMove(e: PointerEvent) {
         if (!dragging) return;
-        applyY(
+        const dt = e.timeStamp - lastT;
+        if (dt > 0) {
+          // smoothed instantaneous velocity for flick detection
+          velocity = velocity * 0.7 + ((e.clientY - lastY) / dt) * 0.3;
+          lastY = e.clientY;
+          lastT = e.timeStamp;
+        }
+        scheduleY(
           clamp(startY + (e.clientY - startPointerY), snaps.full, snaps.peek),
         );
       }
       function onUp(e: PointerEvent) {
         if (!dragging) return;
         dragging = false;
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
         sheet!.classList.remove("sheet-dragging");
-        goTo(
-          nearest(
-            clamp(startY + (e.clientY - startPointerY), snaps.full, snaps.peek),
-          ),
+        const finalY = clamp(
+          startY + (e.clientY - startPointerY),
+          snaps.full,
+          snaps.peek,
         );
+        settle(finalY, startY, startSnap);
         try {
-          handle!.releasePointerCapture(e.pointerId);
+          grab!.releasePointerCapture(e.pointerId);
         } catch {}
       }
+
+      // ── Scroll/drag coordination for the card list ──────────────────────────
+      // Sheet full + list at top + drag down  -> collapse the sheet (not scroll).
+      // Sheet full + list scrolled            -> native scroll.
+      // Sheet not full (list not scrollable)  -> any list drag moves the sheet.
+      let listDragging = false;
+      let listStartTouchY = 0;
+      let listFromY = 0;
+
+      function onListStart(e: TouchEvent) {
+        if (!list || e.touches.length !== 1) return;
+        listDragging = false;
+        listStartTouchY = e.touches[0].clientY;
+        startSnap = current;
+        lastY = e.touches[0].clientY;
+        lastT = e.timeStamp;
+        velocity = 0;
+      }
+      function onListMove(e: TouchEvent) {
+        if (!list) return;
+        const y = e.touches[0].clientY;
+        if (!listDragging) {
+          const dy0 = y - listStartTouchY; // + = down
+          const atTop = list.scrollTop <= 0;
+          const shouldDrag = current !== "full" || (atTop && dy0 > 0);
+          if (!(shouldDrag && Math.abs(dy0) > 4)) return; // let the list scroll natively
+          listDragging = true;
+          sheet!.classList.add("sheet-dragging");
+          listFromY = snaps[current];
+          listStartTouchY = y; // reset baseline so the sheet does not jump on takeover
+          lastY = y;
+          lastT = e.timeStamp;
+          velocity = 0;
+        }
+        e.preventDefault(); // take the gesture over from native scroll
+        const dy = y - listStartTouchY;
+        const dt = e.timeStamp - lastT;
+        if (dt > 0) {
+          velocity = velocity * 0.7 + ((y - lastY) / dt) * 0.3;
+          lastY = y;
+          lastT = e.timeStamp;
+        }
+        scheduleY(clamp(listFromY + dy, snaps.full, snaps.peek));
+      }
+      function onListEnd(e: TouchEvent) {
+        if (!listDragging) return;
+        listDragging = false;
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
+        sheet!.classList.remove("sheet-dragging");
+        const y = e.changedTouches[0]?.clientY ?? listStartTouchY;
+        const finalY = clamp(
+          listFromY + (y - listStartTouchY),
+          snaps.full,
+          snaps.peek,
+        );
+        settle(finalY, listFromY, startSnap);
+      }
+
       const onResize = () => {
         computeSnaps();
         goTo(current);
@@ -363,20 +475,29 @@ export default function PlacesPage() {
       goTo(DEFAULT_SNAP);
       setTimeout(() => mapRef.current?.resize(), 60);
 
-      handle.addEventListener("pointerdown", onDown);
-      handle.addEventListener("pointermove", onMove);
-      handle.addEventListener("pointerup", onUp);
-      handle.addEventListener("pointercancel", onUp);
+      grab.addEventListener("pointerdown", onDown);
+      grab.addEventListener("pointermove", onMove);
+      grab.addEventListener("pointerup", onUp);
+      grab.addEventListener("pointercancel", onUp);
+      list?.addEventListener("touchstart", onListStart, { passive: true });
+      list?.addEventListener("touchmove", onListMove, { passive: false });
+      list?.addEventListener("touchend", onListEnd);
+      list?.addEventListener("touchcancel", onListEnd);
       window.addEventListener("resize", onResize);
       window.addEventListener("orientationchange", onResize);
 
       teardown = () => {
-        handle.removeEventListener("pointerdown", onDown);
-        handle.removeEventListener("pointermove", onMove);
-        handle.removeEventListener("pointerup", onUp);
-        handle.removeEventListener("pointercancel", onUp);
+        grab.removeEventListener("pointerdown", onDown);
+        grab.removeEventListener("pointermove", onMove);
+        grab.removeEventListener("pointerup", onUp);
+        grab.removeEventListener("pointercancel", onUp);
+        list?.removeEventListener("touchstart", onListStart);
+        list?.removeEventListener("touchmove", onListMove);
+        list?.removeEventListener("touchend", onListEnd);
+        list?.removeEventListener("touchcancel", onListEnd);
         window.removeEventListener("resize", onResize);
         window.removeEventListener("orientationchange", onResize);
+        if (rafId) cancelAnimationFrame(rafId);
         sheet.style.removeProperty("--sheet-y"); // restore desktop
         sheet.classList.remove("sheet-dragging");
         delete sheet.dataset.snap;
