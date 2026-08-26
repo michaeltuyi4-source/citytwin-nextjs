@@ -847,12 +847,14 @@ export default function ResultsPage() {
 
         .rp-hero {
           position: relative;
-          height: 200px;
+          min-height: 200px;
           overflow: hidden;
+          display: flex;
+          flex-direction: column;
         }
         @media (min-width: 720px) {
           .rp-hero {
-            height: 240px;
+            min-height: 240px;
           }
         }
         .rp-hero-photo-wrap {
@@ -872,9 +874,10 @@ export default function ResultsPage() {
         .rp-hero-content {
           position: relative;
           z-index: 1;
+          width: 100%;
           max-width: 720px;
           margin: 0 auto;
-          height: 100%;
+          margin-top: auto;
           padding: 20px;
           display: flex;
           flex-direction: column;
