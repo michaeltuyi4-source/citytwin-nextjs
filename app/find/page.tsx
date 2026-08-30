@@ -12,6 +12,7 @@ import { ensureCityData } from "@/lib/neighborhoods-db";
 import { LIFESTYLE_CATEGORIES } from "@/neighborhoods";
 // @ts-ignore
 import { getTopMatches } from "@/scoring";
+import { markQuizCompleted } from "@/lib/gtag";
 
 const CITIES = [
   {
@@ -431,6 +432,7 @@ export default function FindPage() {
     localStorage.setItem("citytwin_city", selectedCity!);
     localStorage.setItem("citytwin_priorities", JSON.stringify(priorities));
     localStorage.setItem("citytwin_no_strong_match", String(noStrongMatch));
+    markQuizCompleted(); // arm the Google Ads quiz-completed conversion (fires on results render)
     router.push("/results");
   }
 

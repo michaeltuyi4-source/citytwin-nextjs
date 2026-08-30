@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { DM_Serif_Display, DM_Sans } from 'next/font/google';
+import Script from 'next/script';
 import { Toaster } from 'sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './globals.css';
@@ -53,6 +54,20 @@ export default function RootLayout({
         className={`${dmSerifDisplay.variable} ${dmSans.variable}`}
         style={{ fontFamily: 'var(--font-body)' }}
       >
+        {/* Google tag (gtag.js) — Google Ads base tag, site-wide. Tracks nothing
+            by itself; conversion events fire from lib/gtag.ts at specific moments. */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17936741119"
+          strategy="afterInteractive"
+        />
+        <Script id="google-ads-base" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-17936741119');
+          `}
+        </Script>
         {children}
         <Toaster position="top-center" richColors />
       </body>

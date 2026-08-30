@@ -16,6 +16,7 @@ import ResidentLinksPanel from "@/components/ResidentLinksPanel";
 import { createClient } from "@/lib/supabase";
 import { getCityPhoto, getCityLabel } from "@/lib/photos";
 import { getCategoryIcon } from "@/lib/categoryIcons";
+import { firePurchaseConversionOnce, fireQuizConversionOnce } from "@/lib/gtag";
 import type { MatchResult, PhraseChip, Gap } from "@/lib/types";
 
 function useCountUp(
@@ -149,6 +150,7 @@ export default function ResultsPage() {
           .then(({ data: profile }) => {
             if (profile?.tier === "premium") {
               setUnlocked(true);
+              firePurchaseConversionOnce(session.user.id);
               return;
             }
             // Webhook hasn't updated yet, poll every second for up to 15s
@@ -163,6 +165,7 @@ export default function ResultsPage() {
                 .single();
               if (p?.tier === "premium") {
                 setUnlocked(true);
+                firePurchaseConversionOnce(session.user.id);
                 setPaymentProcessing(false);
                 clearInterval(pollRef.current!);
                 pollRef.current = null;
@@ -270,6 +273,13 @@ export default function ResultsPage() {
 
     fetchPremiumMatches();
   }, [unlocked, supabase]);
+
+  // Google Ads: quiz-completed conversion — fires once when the free match is
+  // shown after a completed quiz (guarded + marker-consumed in lib/gtag).
+  useEffect(() => {
+    if (!hydrated || results.length === 0) return;
+    fireQuizConversionOnce();
+  }, [hydrated, results.length]);
 
   // Derived values
   const activeMatch = results[activeIdx];
