@@ -109,6 +109,9 @@ export default function PlacesPage() {
   const [authOpen, setAuthOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [isPremium, setIsPremium] = useState(false); // tier === 'premium'
+  // True once the live tier check has resolved. Gates the free-tier locked
+  // placeholders so a premium user never flashes them before their tier loads.
+  const [premiumResolved, setPremiumResolved] = useState(false);
   const placesCache = useRef<Record<string, Record<string, Place[]>>>({});
   // Neighborhood ids whose category counts have already been prefetched this
   // session. Guards the parallel fetch so it fires at most once per neighborhood.
@@ -116,6 +119,10 @@ export default function PlacesPage() {
   // The neighborhood currently being viewed, so a late-resolving fetch only
   // writes counts when its neighborhood is still active (not after a switch).
   const activeCacheKeyRef = useRef<string>("");
+  // Guards the one-time premium fetch of matches #2/#3.
+  const premiumFetchedRef = useRef(false);
+  // Match index handed off from the results page (?match=), applied once loaded.
+  const requestedMatchRef = useRef<number | null>(null);
 
   const supabase = createClient();
 
@@ -130,6 +137,9 @@ export default function PlacesPage() {
     const rawPri = sessionStorage.getItem("citytwin_priorities");
     if (raw) setAllResults(JSON.parse(raw));
     if (rawPri) setUserPriorities(JSON.parse(rawPri));
+    const m = new URLSearchParams(window.location.search).get("match");
+    const idx = m != null ? parseInt(m, 10) : NaN;
+    requestedMatchRef.current = Number.isInteger(idx) && idx > 0 ? idx : null;
   }, []);
 
   // ── Prefetch counts for every category so all tabs show a count (incl. 0) ───────
@@ -537,6 +547,7 @@ export default function PlacesPage() {
     } = await supabase.auth.getSession();
     if (!session) {
       setIsPremium(false);
+      setPremiumResolved(true);
       return { signedIn: false, premium: false };
     }
     const { data: profile } = await supabase
@@ -546,6 +557,7 @@ export default function PlacesPage() {
       .single();
     const premium = profile?.tier === "premium";
     setIsPremium(premium);
+    setPremiumResolved(true);
     return { signedIn: true, premium };
   }, [supabase]);
 
@@ -573,6 +585,58 @@ export default function PlacesPage() {
 
     return () => subscription.unsubscribe();
   }, [refreshPremium, supabase.auth]);
+
+  // Premium users: fetch matches #2 and #3 from the same server-gated endpoint
+  // results/page.tsx uses, and append to allResults so the switcher +
+  // switchNeighborhood work across all three. #2/#3 are NEVER read from the
+  // free-tier citytwin_results storage — only from this authenticated fetch.
+  useEffect(() => {
+    if (!isPremium || premiumFetchedRef.current || allResults.length === 0) return;
+    premiumFetchedRef.current = true;
+
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+      const city =
+        sessionStorage.getItem("citytwin_city") ||
+        localStorage.getItem("citytwin_city");
+      const priRaw =
+        sessionStorage.getItem("citytwin_priorities") ||
+        localStorage.getItem("citytwin_priorities");
+      if (!city || !priRaw) return;
+      try {
+        const res = await fetch("/api/premium-matches", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ city, priorities: JSON.parse(priRaw) }),
+        });
+        if (!res.ok) return;
+        const { matches } = await res.json();
+        if (Array.isArray(matches) && matches.length > 0) {
+          setAllResults((prev) => [prev[0], ...matches]); // [#1, #2, #3]
+        }
+      } catch {
+        // Silently fail — match #1 still works
+      }
+    })();
+  }, [isPremium, allResults.length, supabase]);
+
+  // Deep-link hand-off from results: open on the match the user was viewing.
+  // Index > 0 requires #2/#3, which only premium can load; consumed once.
+  useEffect(() => {
+    const idx = requestedMatchRef.current;
+    if (idx == null || !isPremium) return;
+    if (idx < allResults.length && idx !== activeIdx) {
+      requestedMatchRef.current = null;
+      switchNeighborhood(idx);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allResults, isPremium]);
 
   // ── Clear markers helper ──────────────────────────────────────────────────────
   function clearMarkers() {
@@ -842,7 +906,7 @@ export default function PlacesPage() {
       </div>
 
       {/* ── SWITCHER ── */}
-      {allResults.length > 1 && (
+      {(allResults.length > 1 || (premiumResolved && !isPremium)) && (
         <div className="switcher-wrap">
           <div className="switcher">
             <span className="switcher-label">Explore</span>
@@ -879,6 +943,42 @@ export default function PlacesPage() {
                 </button>
               );
             })}
+            {/* Free-tier tease: locked placeholders for #2/#3 (no real names
+                shipped to the client). Clicking fires the existing upsell via
+                switchNeighborhood's premium gate. Gated on premiumResolved so
+                premium users never flash these before their tier loads. */}
+            {premiumResolved &&
+              !isPremium &&
+              Array.from({ length: 3 - allResults.length }).map((_, k) => {
+                const idx = allResults.length + k;
+                return (
+                  <button
+                    key={`locked-${idx}`}
+                    className="switcher-btn locked"
+                    onClick={() => switchNeighborhood(idx)}
+                  >
+                    <span className="switcher-rank">
+                      {["#1 match", "#2 match", "#3 match"][idx] || `#${idx + 1}`}
+                    </span>
+                    Locked
+                    <span className="switcher-lock" aria-hidden="true">
+                      <svg
+                        width="11"
+                        height="11"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="5" y="11" width="14" height="10" rx="2" />
+                        <path d="M8 11V7a4 4 0 018 0v4" />
+                      </svg>
+                    </span>
+                  </button>
+                );
+              })}
           </div>
         </div>
       )}
