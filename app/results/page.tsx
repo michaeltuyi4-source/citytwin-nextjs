@@ -314,7 +314,7 @@ export default function ResultsPage() {
   }
 
   function handleFindPlaces() {
-    router.push("/places");
+    router.push(`/places?match=${activeIdx}`);
   }
 
   function handleShare() {
