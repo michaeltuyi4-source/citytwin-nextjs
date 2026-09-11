@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { DM_Serif_Display, DM_Sans } from 'next/font/google';
 import Script from 'next/script';
+import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './globals.css';
@@ -70,6 +71,7 @@ export default function RootLayout({
         </Script>
         {children}
         <Toaster position="top-center" richColors />
+        <Analytics />
       </body>
     </html>
   );
